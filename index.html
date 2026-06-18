@@ -35,6 +35,8 @@
     .pref-toggle { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
     .filter-bar { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
     .filter-bar select, .filter-bar input[type=text] { font-size: 13px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-family: inherit; }
+    .bulk-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
+
     .info-bar { background: var(--info-bg); border: 1px solid var(--info-border); border-radius: 8px; padding: 8px 14px; font-size: 12px; color: var(--info-text); margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 10px; transition: opacity 0.2s; }
     .card.presencial { border-left: 4px solid #E24B4A; }
@@ -51,6 +53,15 @@
     .badge-green { background: #E1F5EE; color: #0F6E56; }
     .badge-gray { background: #F0F0F0; color: #888; }
     .badge-done { background: #E1F5EE; color: #0F6E56; }
+    /* badges de status do ticket */
+    .badge-fechado      { background: #F0F0F0; color: #666; }
+    .badge-atribuido    { background: #EEF0FF; color: #4338ca; }
+    .badge-processando  { background: #FFF7E6; color: #92400e; }
+    .badge-concluido-tk { background: #E1F5EE; color: #0F6E56; }
+    [data-theme="dark"] .badge-fechado      { background: #2a2a2a; color: #999; }
+    [data-theme="dark"] .badge-atribuido    { background: #1e1b4b; color: #a5b4fc; }
+    [data-theme="dark"] .badge-processando  { background: #2d1b05; color: #fbbf24; }
+    [data-theme="dark"] .badge-concluido-tk { background: #0a2010; color: #5dcaa5; }
     [data-theme="dark"] .badge-red { background: #3a1515; color: #f09595; }
     [data-theme="dark"] .badge-blue { background: #0c2340; color: #85b7eb; }
     [data-theme="dark"] .badge-amber { background: #2e1f05; color: #fac775; }
@@ -110,6 +121,8 @@
     .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
     .modal-saved-notice { background: #E1F5EE; border: 1px solid #1D9E75; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #0F6E56; margin-bottom: 1rem; display: none; }
     [data-theme="dark"] .modal-saved-notice { background: #0a2010; color: #5dcaa5; border-color: #0F6E56; }
+
+
   </style>
 </head>
 <body>
@@ -160,6 +173,19 @@
     <i class="ti ti-filter" style="color:var(--text-hint);font-size:16px;"></i>
     <select id="filter-base"><option value="">Todas as bases</option></select>
     <select id="filter-problema"><option value="">Todos os tipos</option></select>
+
+    <select id="filter-ticket-status">
+      <option value="">Todos os status do ticket</option>
+      <option value="para_atribuir" selected>Para ser atribuído</option>
+      <option value="processando">Processando</option>
+      <option value="fechado">Fechado</option>
+      <option value="concluido_tk">Processamento concluído</option>
+    </select>
+
+    <select id="filter-assistente">
+      <option value="">Todos os assistentes</option>
+    </select>
+
     <select id="filter-status">
       <option value="">Todos os status</option>
       <option value="pendente">Pendentes</option>
@@ -173,6 +199,12 @@
       <option value="prazo-desc">Prazo ↓ (menos urgente)</option>
     </select>
     <input type="text" id="filter-search" placeholder="Buscar remessa..." style="width:160px;">
+  </div>
+
+  <div class="bulk-bar" id="bulk-bar" style="display:none">
+    <span id="bulk-count">0 tickets visíveis</span>
+    <button class="btn btn-blue" id="btn-copiar-remessas" onclick="copiarRemessasFiltradas()"><i class="ti ti-copy"></i> Copiar remessas</button>
+    <button class="btn btn-green" id="btn-baixar-planilha" onclick="baixarPlanilhaFiltrada()"><i class="ti ti-file-download"></i> Baixar planilha (.xlsx)</button>
   </div>
 
   <div id="cards-container"></div>
@@ -243,24 +275,50 @@
     { chaves: ['verificacao do pod/pod核实', 'verificacao do pod'], saida: 'Verificação do POD' },
     { chaves: ['item damaged (packing damaged)', 'avaria apos entrega', 'avaria apos', 'danificado'], saida: 'Avaria após entrega' },
     { chaves: ['incorrect item', 'incorreto'], saida: 'Item incorreto' },
-    { chaves: ['missing item or empty package'], saida: 'Missing Item Or Empty Package' },
+    { chaves: ['missing item or empty package', 'item faltante', 'pacote vazio', 'item faltante ou pacote vazio'], saida: 'Item faltante ou pacote vazio' },
     { chaves: ['pacote perdido'], saida: 'Pacote Perdido' },
     { chaves: ['troca de etiqueta', 'troca'], saida: 'Troca de etiqueta' },
   ];
 
+  // ─── NORMALIZAÇÃO DO STATUS DO TICKET ────────────────────────────
+  // Retorna uma chave canônica para cada valor possível do BI
+  function normalizarStatusTicket(v) {
+    const s = strip(v);
+    if (!s) return 'sem_status';
+    if (s.includes('para ser atribuido') || s.includes('para atribuir') || s === 'para ser atribuído') return 'para_atribuir';
+    if (s.includes('processamento concluido') || s.includes('processamento concluído')) return 'concluido_tk';
+    if (s.includes('processando')) return 'processando';
+    if (s.includes('fechado')) return 'fechado';
+    return 'sem_status';
+  }
+
+  // Label e classe de badge para cada status canônico
+  const STATUS_TICKET_META = {
+    para_atribuir: { label: 'Para atribuir',           cls: 'badge-atribuido'    },
+    processando:   { label: 'Processando',              cls: 'badge-processando'  },
+    fechado:       { label: 'Fechado',                  cls: 'badge-fechado'      },
+    concluido_tk:  { label: 'Processamento concluído',  cls: 'badge-concluido-tk' },
+    sem_status:    { label: 'Sem status',               cls: 'badge-gray'         },
+  };
+
   const CAMPOS = [
-    { id: 'remessa',      label: 'Remessa / Nº do pedido',        obrigatorio: true,  candidatos: ['remessa', 'numero do pedido', 'pedido'] },
-    { id: 'problema',     label: 'Tipo de problema (nível 2)',     obrigatorio: true,  candidatos: ['tipo de item problematico nivel 2', 'tipo de item problematico', 'problema nivel 2', 'nivel 2'] },
-    { id: 'base',         label: 'Base responsável',               obrigatorio: true,  candidatos: ['base responsavel', 'base responsável', 'base'] },
-    { id: 'tel',          label: 'Telefone do destinatário',       obrigatorio: false, candidatos: ['telefone do destinatario', 'telefone do destinatário', 'telefone', 'tel', 'fone', 'contato'] },
-    { id: 'entregador',   label: 'Entregador',                     obrigatorio: false, candidatos: ['entregador'] },
-    { id: 'dataBaixa',    label: 'Data da entrega / baixa',        obrigatorio: false, candidatos: ['data da entrega', 'data de entrega', 'data baixa', 'horario entrega'] },
-    { id: 'prazo',        label: 'Prazo regional / vencimento',    obrigatorio: false, candidatos: ['prazo regional', 'prazo', 'vencimento'] },
-    { id: 'valor',        label: 'Valor do produto',               obrigatorio: false, candidatos: ['valor', 'valor do produto', 'preco', 'price'] },
-    { id: 'item',         label: 'Item / Descrição do produto',    obrigatorio: false, candidatos: ['item', 'descricao do produto', 'descricao', 'produto', 'description'] },
-    { id: 'embarcador',   label: 'Embarcador / Origem do pedido',  obrigatorio: false, candidatos: ['origem do pedido', 'embarcador', 'loja', 'origem'] },
-    { id: 'destinatario', label: 'Nome do destinatário',           obrigatorio: false, candidatos: ['nome do destinatario', 'nome do destinatário', 'destinatario', 'destinatário', 'cliente'] },
-    { id: 'rne',          label: 'RNE / Focal',                    obrigatorio: false, candidatos: ['rne'] },
+    { id: 'remessa',       label: 'Remessa / Nº do pedido',        obrigatorio: true,  candidatos: ['remessa', 'numero da remessa', 'numero do pedido', 'numero pedido', 'pedido', 'waybill', 'tracking', 'cod remessa', 'codigo remessa'] },
+    { id: 'problema',      label: 'Tipo de problema (nível 2)',     obrigatorio: true,  candidatos: ['tipo de item problematico nivel 2', 'tipo de item problematico nivel2', 'tipo de item problematico', 'problema nivel 2', 'problema nivel2', 'nivel 2', 'nivel2', 'tipo do problema', 'tipo problema'] },
+    { id: 'base',          label: 'Base responsável',               obrigatorio: true,  candidatos: ['base', 'base responsavel', 'base responsável', 'base de distribuicao', 'base distribuicao', 'hub responsavel', 'hub'] },
+    { id: 'statusTicket',  label: 'Status do Ticket',               obrigatorio: false, candidatos: ['status', 'status do ticket', 'status ticket', 'status da ocorrencia', 'status ocorrencia', 'status do chamado', 'situacao do ticket', 'situacao ticket'] },
+    // assistente vem ANTES de tel para evitar que 'assistente' bata em coluna de telefone
+    { id: 'assistenteResp',label: 'Assistente Responsável',         obrigatorio: false, candidatos: ['assistente', 'atendente', 'assistente responsavel', 'assistente responsável', 'atendente responsavel', 'atendente responsável', 'responsavel', 'responsável'] },
+    { id: 'tel',           label: 'Telefone do destinatário',       obrigatorio: false, candidatos: ['telefone', 'celular', 'tel', 'fone', 'contato', 'telefone do destinatario', 'telefone do destinatário', 'telefone destinatario', 'telefone do cliente', 'celular do destinatario', 'celular destinatario'] },
+    { id: 'entregador',    label: 'Entregador',                     obrigatorio: false, candidatos: ['entregador', 'nome do entregador', 'entregador responsavel', 'motorista', 'courier'] },
+    // data da entrega listada primeiro para ter prioridade sobre variações
+    { id: 'dataBaixa',     label: 'Data da entrega / baixa',        obrigatorio: false, candidatos: ['data da entrega', 'data de entrega', 'data entrega', 'data da baixa', 'data de baixa', 'data baixa', 'horario de entrega', 'horario entrega'] },
+    { id: 'prazo',         label: 'Prazo regional / vencimento',    obrigatorio: false, candidatos: ['prazo', 'vencimento', 'prazo regional', 'prazo de vencimento', 'data de vencimento', 'prazo limite'] },
+    { id: 'valor',         label: 'Valor do produto',               obrigatorio: false, candidatos: ['valor', 'preco', 'price', 'valor declarado', 'valor do produto', 'valor do pedido', 'valor mercadoria', 'valor nota fiscal', 'valor nf'] },
+    { id: 'item',          label: 'Item / Descrição do produto',    obrigatorio: false, candidatos: ['conteudo do pacote', 'conteudo', 'produto', 'descricao', 'description', 'descricao do produto', 'descricao do item', 'nome do produto', 'nome do item', 'descricao produto', 'descricao item', 'item'] },
+    { id: 'embarcador',    label: 'Embarcador / Origem do pedido',  obrigatorio: false, candidatos: ['embarcador', 'loja', 'origem', 'origem do pedido', 'nome do embarcador', 'lojista', 'shipper', 'seller'] },
+    // nome destinatario/destinatário com typo incluído
+    { id: 'destinatario',  label: 'Nome do destinatário',           obrigatorio: false, candidatos: ['destinatario', 'destinatário', 'cliente', 'nome destainario', 'nome do destinatario', 'nome do destinatário', 'nome destinatario', 'nome destinatário', 'nome do cliente', 'recipient'] },
+    { id: 'rne',           label: 'RNE / Focal',                    obrigatorio: false, candidatos: ['rne', 'focal', 'numero rne', 'cod rne'] },
   ];
 
   // ─── UTILITÁRIOS ──────────────────────────────────────────────────
@@ -287,9 +345,21 @@
     return wb.SheetNames[wb.SheetNames.length-1];
   }
 
-  function detectarColuna(cols, cands) {
-    for (const c of cands) { const cl=strip(c); for (const col of cols) if (strip(col)===cl) return col; }
-    for (const c of cands) { const cl=strip(c); for (const col of cols) if (strip(col).includes(cl)) return col; }
+  function detectarColuna(cols, cands, usadas) {
+    usadas = usadas || new Set();
+    // Passo 1: match exato (sem acentos), ignorando colunas já usadas por outro campo
+    for (const c of cands) {
+      const cl = strip(c);
+      for (const col of cols) if (!usadas.has(col) && strip(col) === cl) return col;
+    }
+    // Passo 2: a coluna da planilha contém o candidato como palavra/trecho completo
+    for (const c of cands) {
+      const cl = strip(c);
+      for (const col of cols) {
+        const sc = strip(col);
+        if (!usadas.has(col) && sc.includes(cl)) return col;
+      }
+    }
     return null;
   }
 
@@ -391,7 +461,8 @@
   // ─── MODAL MAPEAMENTO ─────────────────────────────────────────────
   function abrirModalMapeamento(cols, mapaAtual, foiSalvo, onConfirm) {
     const mc=document.getElementById('modal-container');
-    const linhas=CAMPOS.map(campo=>{
+
+    const linhas = CAMPOS.map(campo => {
       const cur=mapaAtual[campo.id]||'';
       const cls=cur?'auto':(campo.obrigatorio?'missing':'');
       return `<div class="modal-row">
@@ -459,6 +530,10 @@
       const valorRaw=mapa.valor?r[mapa.valor]:null;
       const valorNum=tratarValor(valorRaw);
       const itemRaw=mapa.item?String(r[mapa.item]||'').trim():'';
+      // ★ captura e normaliza o status do ticket
+      const statusTicketRaw = mapa.statusTicket ? String(r[mapa.statusTicket]||'').trim() : '';
+      const statusTicket    = normalizarStatusTicket(statusTicketRaw);
+
       return {
         remessa:      mapa.remessa      ? tratarNumero(r[mapa.remessa])                    : '',
         tel:          mapa.tel          ? String(r[mapa.tel]||'').trim()                   : '',
@@ -474,6 +549,9 @@
         problema:     prob,
         destinatario: mapa.destinatario ? String(r[mapa.destinatario]||'Cliente').trim()   : 'Cliente',
         rne:          mapa.rne          ? String(r[mapa.rne]||'').trim()                   : '',
+        statusTicket,
+        statusTicketRaw,
+        assistenteResp: mapa.assistenteResp ? String(r[mapa.assistenteResp]||'').trim() : '',
       };
     }).filter(Boolean);
     return { dados, ignorados };
@@ -499,11 +577,7 @@
     }
     const art=artigo_embarcador(emb);
     return `Olá, *${nome}*!\n\nSou ${assistente}, representante da Transportadora J&T Express, parceira de entregas ${art} *${emb}*\nVerificamos que você abriu uma reclamação referente ao pedido *${rem}*${produtoStr}\n\nPara que possamos auxiliar, escolha uma opção:\n\n1️⃣ Recebi o produto\n2️⃣ Não recebi o produto\n3️⃣ Recebi o pacote com produtos faltantes\n4️⃣ Recebi o produto com defeito\n5️⃣ Recebi um produto diferente do comprado\n6️⃣ Recebi o produto danificado`;
-  
   }
-
-
-
 
   function gerarTemplateFeishu(row, assistente, lider, presencial) {
     const tel=presencial?'Apenas presencial':(row.tel||'N/A');
@@ -606,22 +680,27 @@
     document.getElementById('filter-bar').style.display='flex';
     const bases=[...new Set(dadosGlobal.map(r=>r.base))].sort();
     const problemas=[...new Set(dadosGlobal.map(r=>r.problema))].sort();
-    const sb=document.getElementById('filter-base'), sp=document.getElementById('filter-problema');
+    const assistentes=[...new Set(dadosGlobal.map(r=>r.assistenteResp).filter(Boolean))].sort();
+    const sb=document.getElementById('filter-base'), sp=document.getElementById('filter-problema'), sa=document.getElementById('filter-assistente');
     sb.innerHTML='<option value="">Todas as bases</option>';
     sp.innerHTML='<option value="">Todos os tipos</option>';
+    sa.innerHTML='<option value="">Todos os assistentes</option>';
     bases.forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; sb.appendChild(o); });
     problemas.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; sp.appendChild(o); });
+    assistentes.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; sa.appendChild(o); });
     renderCards();
   }
 
-  function renderCards() {
-    const container=document.getElementById('cards-container');
+  // Retorna a lista atual de {row, idx} respeitando todos os filtros e ordenação ativos.
+  // Usada tanto para renderizar os cards quanto para as ações em massa (copiar/baixar).
+  function getFiltradosAtuais() {
     const filtroBase=document.getElementById('filter-base').value;
     const filtroProblema=document.getElementById('filter-problema').value;
     const filtroStatus=document.getElementById('filter-status').value;
+    const filtroTicketStatus=document.getElementById('filter-ticket-status').value;
+    const filtroAssistente=document.getElementById('filter-assistente').value;
     const filtroSearch=document.getElementById('filter-search').value.toLowerCase();
     const sortOrder=document.getElementById('sort-order').value;
-    const assistente=document.getElementById('assistente-input').value.trim()||'Atendente';
 
     let filtrados=dadosGlobal
       .map((row,idx)=>({row,idx}))
@@ -631,6 +710,8 @@
         if (filtroSearch&&!row.remessa.includes(filtroSearch)) return false;
         if (filtroStatus==='pendente'&&!!concluidoMemoria[row.remessa]) return false;
         if (filtroStatus==='concluido'&&!concluidoMemoria[row.remessa]) return false;
+        if (filtroTicketStatus&&row.statusTicket!==filtroTicketStatus) return false;
+        if (filtroAssistente&&row.assistenteResp!==filtroAssistente) return false;
         return true;
       });
 
@@ -639,7 +720,66 @@
     if (sortOrder==='prazo-asc')  filtrados.sort((a,b)=>a.row.prazoTs-b.row.prazoTs);
     if (sortOrder==='prazo-desc') filtrados.sort((a,b)=>b.row.prazoTs-a.row.prazoTs);
 
+    return filtrados;
+  }
+
+  // ─── AÇÕES EM MASSA ───────────────────────────────────────────────
+  function copiarRemessasFiltradas() {
+    const filtrados = getFiltradosAtuais();
+    if (!filtrados.length) { showToast('Nenhum ticket para copiar.'); return; }
+    const texto = filtrados.map(({row}) => row.remessa).join('\n');
+    copiarTexto(texto, 'btn-copiar-remessas', `${filtrados.length} remessa(s) copiada(s)!`);
+  }
+
+  function baixarPlanilhaFiltrada() {
+    const filtrados = getFiltradosAtuais();
+    if (!filtrados.length) { showToast('Nenhum ticket para exportar.'); return; }
+
+    const linhas = filtrados.map(({row}) => ({
+      'Remessa': row.remessa,
+      'Status do Ticket': row.statusTicketRaw || '',
+      'Assistente Responsável': row.assistenteResp || '',
+      'Base': row.base,
+      'Problema': row.problema,
+      'Embarcador': row.embarcador,
+      'Destinatário': row.destinatario,
+      'Telefone': row.tel,
+      'Entregador': row.entregador,
+      'Data da Entrega': row.dataBaixa,
+      'Vencimento': row.vencimento,
+      'Valor': row.valorFmt || '',
+      'Item': row.item || '',
+      'RNE': row.rne || '',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(linhas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Acareações');
+
+    const agora = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const nomeArquivo = `acareacoes_${agora.getFullYear()}${pad(agora.getMonth()+1)}${pad(agora.getDate())}_${pad(agora.getHours())}${pad(agora.getMinutes())}.xlsx`;
+
+    XLSX.writeFile(wb, nomeArquivo);
+    showToast(`Planilha com ${filtrados.length} ticket(s) baixada!`);
+  }
+
+  function atualizarBulkBar(qtd) {
+    const bar = document.getElementById('bulk-bar');
+    const count = document.getElementById('bulk-count');
+    if (!bar) return;
+    bar.style.display = qtd > 0 ? 'flex' : 'none';
+    if (count) count.textContent = `${qtd} ticket${qtd===1?'':'s'} visível${qtd===1?'':'eis'} (respeitando os filtros atuais)`;
+  }
+
+  function renderCards() {
+    const container=document.getElementById('cards-container');
+    const assistente=document.getElementById('assistente-input').value.trim()||'Atendente';
+
+    let filtrados = getFiltradosAtuais();
+
     atualizarStats();
+    atualizarBulkBar(filtrados.length);
 
     if (!filtrados.length) {
       container.innerHTML='<div class="empty"><i class="ti ti-inbox" style="font-size:36px;display:block;margin-bottom:8px;"></i>Nenhuma acareação encontrada</div>';
@@ -652,6 +792,12 @@
       const done=!!concluidoMemoria[row.remessa];
       const lider=lideresMemoria[row.base]||'';
 
+      // ★ badge de status do ticket
+      const stMeta = STATUS_TICKET_META[row.statusTicket] || STATUS_TICKET_META['sem_status'];
+      const badgeTicket = row.statusTicketRaw
+        ? `<span class="badge ${stMeta.cls}" title="Status no BI: ${row.statusTicketRaw}">${stMeta.label}</span>`
+        : '';
+
       return `
       <div class="card ${presencial?'presencial':''} ${done?'concluido':''}" id="card-${idx}">
         <div class="card-top">
@@ -662,6 +808,7 @@
           <div class="badges">
             <span class="badge ${presencial?'badge-red':'badge-blue'}" id="badge-tipo-${idx}">${presencial?'Presencial':'WhatsApp'}</span>
             <span class="badge badge-amber">${row.problema}</span>
+            ${badgeTicket}
             ${row.valorFmt?`<span class="badge badge-gray">${row.valorFmt}</span>`:''}
             <span class="badge badge-done" id="badge-done-${idx}" style="display:${done?'':'none'}"><i class="ti ti-check"></i> Concluída</span>
           </div>
@@ -696,9 +843,12 @@
     document.getElementById('filter-search').value='';
     document.getElementById('sort-order').value='';
     document.getElementById('filter-status').value='';
+    document.getElementById('filter-ticket-status').value='para_atribuir';
+    document.getElementById('filter-assistente').value='';
     document.getElementById('upload-area').style.display='block';
     document.getElementById('stats').style.display='none';
     document.getElementById('filter-bar').style.display='none';
+    document.getElementById('bulk-bar').style.display='none';
     document.getElementById('info-bar').style.display='none';
     document.getElementById('cards-container').innerHTML='';
     recriarInputArquivo().click();
@@ -724,7 +874,12 @@
         if (!raw.length) { alert('Planilha vazia.'); return; }
         const cols=Object.keys(raw[0]), sig=assinatura(cols);
         const mapaSalvo=carregarMapeamento(sig), foiSalvo=!!mapaSalvo;
-        const mapaAuto={}; CAMPOS.forEach(c=>{ mapaAuto[c.id]=detectarColuna(cols,c.candidatos); });
+        const mapaAuto={}; const colunasUsadas=new Set();
+        CAMPOS.forEach(c=>{
+          const col = detectarColuna(cols, c.candidatos, colunasUsadas);
+          mapaAuto[c.id] = col;
+          if (col) colunasUsadas.add(col);
+        });
         abrirModalMapeamento(cols,mapaSalvo||mapaAuto,foiSalvo,(mapaConfirmado)=>{
           const {dados,ignorados}=processarDados(raw,mapaConfirmado);
           dadosGlobal=dados; finalizarCarregamento(abaNome,raw,ignorados);
@@ -738,6 +893,8 @@
   document.getElementById('filter-base').addEventListener('change',renderCards);
   document.getElementById('filter-problema').addEventListener('change',renderCards);
   document.getElementById('filter-status').addEventListener('change',renderCards);
+  document.getElementById('filter-ticket-status').addEventListener('change',renderCards);
+  document.getElementById('filter-assistente').addEventListener('change',renderCards);
   document.getElementById('filter-search').addEventListener('input',renderCards);
   document.getElementById('sort-order').addEventListener('change',renderCards);
   document.getElementById('assistente-input').addEventListener('input',(e)=>{
