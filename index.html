@@ -86,10 +86,6 @@
     .btn-teal:hover { background: #ecfeff; }
     [data-theme="dark"] .btn-teal { color: #67e8f9; border-color: #0891b2; }
     [data-theme="dark"] .btn-teal:hover { background: #0a1f2a; }
-    .btn-purple { border-color: #7c3aed; color: #6d28d9; }
-    .btn-purple:hover { background: #f3eefe; }
-    [data-theme="dark"] .btn-purple { color: #c4b5fd; border-color: #7c3aed; }
-    [data-theme="dark"] .btn-purple:hover { background: #1e1530; }
     .btn-done { border-color: #1D9E75; color: #0F6E56; }
     .btn-done:hover { background: #E1F5EE; }
     .btn-done.ativo { background: #E1F5EE; font-weight: 600; }
@@ -583,15 +579,6 @@
     return `Olá, *${nome}*!\n\nSou ${assistente}, representante da Transportadora J&T Express, parceira de entregas ${art} *${emb}*\nVerificamos que você abriu uma reclamação referente ao pedido *${rem}*${produtoStr}\n\nPara que possamos auxiliar, escolha uma opção:\n\n1️⃣ Recebi o produto\n2️⃣ Não recebi o produto\n3️⃣ Recebi o pacote com produtos faltantes\n4️⃣ Recebi o produto com defeito\n5️⃣ Recebi um produto diferente do comprado\n6️⃣ Recebi o produto danificado`;
   }
 
-  function gerarMensagemRecebido(row, assistente) {
-    const nome=row.destinatario||'Cliente';
-    const emb=row.embarcador||'N/A';
-    const rem=row.remessa||'N/A';
-    const art=artigo_embarcador(emb);
-    const produtoStr = row.item ? `, produto: *${row.item}*` : '';
-    return `Olá, *${nome}*!\n\nSou ${assistente}, representante da Transportadora J&T Express, parceira de entregas ${art} *${emb}*\nGostaríamos de confirmar o recebimento do seu pedido *${rem}*${produtoStr}\n\nPor favor, escolha uma opção:\n\n1️⃣ Recebi o produto\n2️⃣ Não recebi o produto`;
-  }
-
   function gerarTemplateFeishu(row, assistente, lider, presencial) {
     const tel=presencial?'Apenas presencial':(row.tel||'N/A');
     const linhas=[
@@ -634,12 +621,6 @@
     const row=dadosGlobal[idx]; if (!row) return;
     const assistente=document.getElementById('assistente-input').value.trim()||'Atendente';
     copiarTexto(gerarMensagemWpp(row,assistente),'btn-msg-'+idx,'Mensagem copiada!');
-  }
-
-  function copiarMensagemRecebido(idx) {
-    const row=dadosGlobal[idx]; if (!row) return;
-    const assistente=document.getElementById('assistente-input').value.trim()||'Atendente';
-    copiarTexto(gerarMensagemRecebido(row,assistente),'btn-recebido-'+idx,'Mensagem copiada!');
   }
 
   function fallbackCopy(texto,cb) {
@@ -840,7 +821,6 @@
         </div>
         <div class="card-actions">
           <button class="btn btn-teal" id="btn-msg-${idx}" onclick="copiarMensagemWpp(${idx})"><i class="ti ti-message"></i> Copiar ativo</button>
-          <button class="btn btn-purple" id="btn-recebido-${idx}" onclick="copiarMensagemRecebido(${idx})"><i class="ti ti-package"></i> Copiar recebido</button>
           <button class="btn btn-blue" id="btn-copy-${idx}" onclick="copiarFeishu(${idx})"><i class="ti ti-copy"></i> Copiar template Feishu</button>
           <button class="btn btn-done ${done?'ativo':''}" id="btn-done-${idx}" onclick="toggleConcluido(${idx})">
             <i class="ti ti-check"></i> ${done?'Concluída':'Concluir'}
