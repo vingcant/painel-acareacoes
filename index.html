@@ -150,6 +150,10 @@
       <input type="checkbox" id="pref-valor" onchange="salvarPrefs()">
       Incluir valor no Template Feishu
     </label>
+    <label class="pref-toggle">
+      <input type="checkbox" id="pref-tel-entregador" onchange="salvarPrefs()">
+      Incluir telefone do entregador no Template Feishu
+    </label>
     <span style="color:var(--text-hint);font-size:11px;">— aplicado se houver a coluna na planilha</span>
   </div>
 
@@ -257,11 +261,13 @@
     const p = JSON.parse(localStorage.getItem('prefs') || '{}');
     document.getElementById('pref-produto').checked = !!p.produto;
     document.getElementById('pref-valor').checked   = !!p.valor;
+    document.getElementById('pref-tel-entregador').checked = !!p.telEntregador;
   }
   function salvarPrefs() {
     localStorage.setItem('prefs', JSON.stringify({
       produto: document.getElementById('pref-produto').checked,
       valor:   document.getElementById('pref-valor').checked,
+      telEntregador: document.getElementById('pref-tel-entregador').checked,
     }));
   }
   function getPrefs() {
@@ -309,6 +315,7 @@
     // assistente vem ANTES de tel para evitar que 'assistente' bata em coluna de telefone
     { id: 'assistenteResp',label: 'Assistente Responsável',         obrigatorio: false, candidatos: ['assistente', 'atendente', 'assistente responsavel', 'assistente responsável', 'atendente responsavel', 'atendente responsável', 'responsavel', 'responsável'] },
     { id: 'tel',           label: 'Telefone do destinatário',       obrigatorio: false, candidatos: ['telefone', 'celular', 'tel', 'fone', 'contato', 'telefone do destinatario', 'telefone do destinatário', 'telefone destinatario', 'telefone do cliente', 'celular do destinatario', 'celular destinatario'] },
+    { id: 'telEntregador', label: 'Telefone do entregador',         obrigatorio: false, candidatos: ['telefone entregador', 'telefone do entregador', 'celular entregador', 'celular do entregador', 'tel entregador', 'fone entregador', 'contato entregador', 'whatsapp entregador', 'telefone motorista', 'celular motorista', 'tel motorista', 'contato do entregador'] },
     { id: 'entregador',    label: 'Entregador',                     obrigatorio: false, candidatos: ['entregador', 'nome do entregador', 'entregador responsavel', 'motorista', 'courier'] },
     // data da entrega listada primeiro para ter prioridade sobre variações
     { id: 'dataBaixa',     label: 'Data da entrega / baixa',        obrigatorio: false, candidatos: ['data da entrega', 'data de entrega', 'data entrega', 'data da baixa', 'data de baixa', 'data baixa', 'horario de entrega', 'horario entrega'] },
@@ -537,6 +544,7 @@
       return {
         remessa:      mapa.remessa      ? tratarNumero(r[mapa.remessa])                    : '',
         tel:          mapa.tel          ? String(r[mapa.tel]||'').trim()                   : '',
+        telEntregador:mapa.telEntregador? String(r[mapa.telEntregador]||'').trim()         : '',
         entregador:   mapa.entregador   ? String(r[mapa.entregador]||'N/A').trim()         : 'N/A',
         dataBaixa:    mapa.dataBaixa    ? formatarDataExcel(r[mapa.dataBaixa])             : 'N/A',
         vencimento:   prazoRaw!=null    ? ajustarVencimento(prazoRaw)                      : 'N/A',
@@ -592,6 +600,7 @@
       `TEL: ${tel}`,
     ];
 
+    if (getPrefs().telEntregador && row.telEntregador) linhas.push(`TEL ENTREGADOR: ${row.telEntregador}`);
     if (getPrefs().valor && row.valorFmt) linhas.push(`VALOR: ${row.valorFmt}`);
     linhas.push(`Atendente responsável: ${assistente}`);
     if (lider&&lider.trim()) { linhas.push(``); linhas.push(`@${lider.trim()}`); }
@@ -744,6 +753,7 @@
       'Embarcador': row.embarcador,
       'Destinatário': row.destinatario,
       'Telefone': row.tel,
+      'Telefone Entregador': row.telEntregador || '',
       'Entregador': row.entregador,
       'Data da Entrega': row.dataBaixa,
       'Vencimento': row.vencimento,
@@ -816,7 +826,8 @@
         <div class="card-grid">
           <div class="field"><div class="field-label">Vencimento</div><div class="field-value">${row.vencimento}</div></div>
           <div class="field"><div class="field-label">Entregador</div><div class="field-value">${row.entregador}</div></div>
-          <div class="field"><div class="field-label">Telefone</div><div class="field-value">${invalido?'Sem número':row.tel}</div></div>
+          <div class="field"><div class="field-label">Telefone cliente</div><div class="field-value">${invalido?'Sem número':row.tel}</div></div>
+          <div class="field"><div class="field-label">Telefone entregador</div><div class="field-value">${row.telEntregador||'N/A'}</div></div>
           ${row.item?`<div class="field"><div class="field-label">Produto</div><div class="field-value">${row.item}</div></div>`:''}
         </div>
         <div class="card-actions">
