@@ -96,6 +96,10 @@
     .btn-red { border-color: #D85A30; color: #993C1D; opacity: 0.6; cursor: not-allowed; }
     .btn-sm { padding: 3px 10px; font-size: 11px; }
     .lider-input { font-size: 12px; padding: 5px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card2); color: var(--text); width: 140px; font-family: inherit; }
+    .obs-wrap { margin-top: 10px; }
+    .obs-textarea { width: 100%; font-size: 12px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: inherit; resize: vertical; min-height: 50px; }
+    .btn-obs.ativo { border-color: #378ADD; color: #185FA5; }
+    [data-theme="dark"] .btn-obs.ativo { color: #85b7eb; border-color: #185FA5; }
     .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); cursor: pointer; user-select: none; }
     .empty { text-align: center; color: var(--text-hint); padding: 3rem 1rem; font-size: 14px; }
     .toast { position: fixed; bottom: 24px; right: 24px; background: #1D9E75; color: white; padding: 11px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -209,6 +213,17 @@
     <span id="bulk-count">0 tickets visíveis</span>
     <button class="btn btn-blue" id="btn-copiar-remessas" onclick="copiarRemessasFiltradas()"><i class="ti ti-copy"></i> Copiar remessas</button>
     <button class="btn btn-green" id="btn-baixar-planilha" onclick="baixarPlanilhaFiltrada()"><i class="ti ti-file-download"></i> Baixar planilha (.xlsx)</button>
+    <span style="width:1px;height:18px;background:var(--border);"></span>
+    <button class="btn btn-sm" id="btn-bulk-obs-toggle" onclick="toggleBulkObs()"><i class="ti ti-note"></i> Obs em massa</button>
+    <span id="bulk-selecao-controles" style="display:none;align-items:center;gap:10px;">
+      <span id="bulk-selected-count">0 selecionados</span>
+      <button class="btn btn-sm" onclick="selecionarTodosVisiveis()"><i class="ti ti-checkbox"></i> Selecionar visíveis</button>
+      <button class="btn btn-sm" onclick="limparSelecao()"><i class="ti ti-x"></i> Limpar seleção</button>
+    </span>
+  </div>
+  <div class="obs-wrap" id="bulk-obs-wrap" style="display:none;margin-bottom:1rem;">
+    <textarea class="obs-textarea" id="bulk-obs-input" placeholder="Digite a observação para aplicar aos selecionados..."></textarea>
+    <button class="btn btn-blue btn-sm" style="margin-top:6px;" onclick="aplicarObsEmMassa()"><i class="ti ti-check"></i> Aplicar aos selecionados</button>
   </div>
 
   <div id="cards-container"></div>
@@ -243,11 +258,15 @@
   const lideresMemoria    = JSON.parse(localStorage.getItem('lideres')    || '{}');
   const presencialMemoria = JSON.parse(localStorage.getItem('presencial') || '{}');
   const concluidoMemoria  = JSON.parse(localStorage.getItem('concluido')  || '{}');
+  const obsMemoria        = JSON.parse(localStorage.getItem('obs')        || '{}');
   let dadosGlobal = [];
+  let selecionados = new Set();
+  let modoSelecaoObs = false;
 
   function persistirLideres()    { localStorage.setItem('lideres',    JSON.stringify(lideresMemoria)); }
   function persistirPresencial() { localStorage.setItem('presencial', JSON.stringify(presencialMemoria)); }
   function persistirConcluido()  { localStorage.setItem('concluido',  JSON.stringify(concluidoMemoria)); }
+  function persistirObs()        { localStorage.setItem('obs',        JSON.stringify(obsMemoria)); }
 
   document.addEventListener('DOMContentLoaded', () => {
     const nome = localStorage.getItem('atendente') || '';
@@ -330,6 +349,8 @@
 
   // ─── UTILITÁRIOS ──────────────────────────────────────────────────
   function strip(s) { return String(s||'').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+  function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function normalizar_problema(v) {
     const s = strip(v); if (!s) return null;
@@ -587,7 +608,7 @@
     return `Olá, *${nome}*!\n\nSou ${assistente}, representante da Transportadora J&T Express, parceira de entregas ${art} *${emb}*\nVerificamos que você abriu uma reclamação referente ao pedido *${rem}*${produtoStr}\n\nPara que possamos auxiliar, escolha uma opção:\n\n1️⃣ Recebi o produto\n2️⃣ Não recebi o produto\n3️⃣ Recebi o pacote com produtos faltantes\n4️⃣ Recebi o produto com defeito\n5️⃣ Recebi um produto diferente do comprado\n6️⃣ Recebi o produto danificado`;
   }
 
-  function gerarTemplateFeishu(row, assistente, lider, presencial) {
+  function gerarTemplateFeishu(row, assistente, lider, presencial, obs) {
     const tel=presencial?'Apenas presencial':(row.tel||'N/A');
     const linhas=[
       ``,
@@ -604,6 +625,7 @@
     if (getPrefs().valor && row.valorFmt) linhas.push(`VALOR: ${row.valorFmt}`);
     linhas.push(`Atendente responsável: ${assistente}`);
     if (lider&&lider.trim()) { linhas.push(``); linhas.push(`@${lider.trim()}`); }
+    if (obs&&obs.trim()) { linhas.push(``); linhas.push(`Obs: ${obs.trim()}`); }
     return linhas.join('\n');
   }
 
@@ -623,7 +645,24 @@
     const inputLider=document.getElementById('lider-input-'+idx);
     const lider=inputLider?inputLider.value.trim():(lideresMemoria[row.base]||'');
     const presencial=isNumeroInvalido(row.tel)||!!presencialMemoria[row.remessa];
-    copiarTexto(gerarTemplateFeishu(row,assistente,lider,presencial),'btn-copy-'+idx,'Template copiado!');
+    const inputObs=document.getElementById('obs-input-'+idx);
+    const obs=inputObs?inputObs.value.trim():(obsMemoria[row.remessa]||'');
+    copiarTexto(gerarTemplateFeishu(row,assistente,lider,presencial,obs),'btn-copy-'+idx,'Template copiado!');
+  }
+
+  function toggleObs(idx) {
+    const wrap=document.getElementById('obs-wrap-'+idx); if (!wrap) return;
+    const mostrando=wrap.style.display!=='none';
+    wrap.style.display=mostrando?'none':'block';
+    if (!mostrando) document.getElementById('obs-input-'+idx)?.focus();
+  }
+
+  function salvarObs(idx, valor) {
+    const row=dadosGlobal[idx]; if (!row) return;
+    if (valor&&valor.trim()) obsMemoria[row.remessa]=valor; else delete obsMemoria[row.remessa];
+    persistirObs();
+    const btn=document.getElementById('btn-obs-'+idx);
+    if (btn) btn.classList.toggle('ativo',!!obsMemoria[row.remessa]);
   }
 
   function copiarMensagemWpp(idx) {
@@ -780,6 +819,64 @@
     if (!bar) return;
     bar.style.display = qtd > 0 ? 'flex' : 'none';
     if (count) count.textContent = `${qtd} ticket${qtd===1?'':'s'} visível${qtd===1?'':'eis'} (respeitando os filtros atuais)`;
+    atualizarContadorSelecionados();
+  }
+
+  // ─── SELEÇÃO / OBS EM MASSA ───────────────────────────────────────
+  function atualizarContadorSelecionados() {
+    const el = document.getElementById('bulk-selected-count');
+    if (el) el.textContent = `${selecionados.size} selecionado${selecionados.size===1?'':'s'}`;
+  }
+
+  function toggleSelecao(idx, checked) {
+    if (checked) selecionados.add(idx); else selecionados.delete(idx);
+    atualizarContadorSelecionados();
+  }
+
+  function selecionarTodosVisiveis() {
+    getFiltradosAtuais().forEach(({idx})=>selecionados.add(idx));
+    renderCards();
+  }
+
+  function limparSelecao() {
+    selecionados.clear();
+    renderCards();
+  }
+
+  function fecharBulkObs() {
+    modoSelecaoObs = false;
+    const wrap = document.getElementById('bulk-obs-wrap');
+    const controles = document.getElementById('bulk-selecao-controles');
+    if (wrap) wrap.style.display = 'none';
+    if (controles) controles.style.display = 'none';
+    selecionados.clear();
+    renderCards();
+  }
+
+  function toggleBulkObs() {
+    if (modoSelecaoObs) { fecharBulkObs(); return; }
+    modoSelecaoObs = true;
+    const wrap = document.getElementById('bulk-obs-wrap');
+    const controles = document.getElementById('bulk-selecao-controles');
+    if (wrap) wrap.style.display = 'block';
+    if (controles) controles.style.display = 'flex';
+    document.getElementById('bulk-obs-input')?.focus();
+    renderCards();
+  }
+
+  function aplicarObsEmMassa() {
+    const input = document.getElementById('bulk-obs-input');
+    const texto = input ? input.value.trim() : '';
+    if (!texto) { showToast('Digite uma observação.'); return; }
+    if (!selecionados.size) { showToast('Nenhum ticket selecionado.'); return; }
+    selecionados.forEach(idx => {
+      const row = dadosGlobal[idx]; if (!row) return;
+      obsMemoria[row.remessa] = texto;
+    });
+    persistirObs();
+    showToast(`Obs aplicada a ${selecionados.size} ticket(s)!`);
+    if (input) input.value = '';
+    fecharBulkObs();
   }
 
   function renderCards() {
@@ -811,9 +908,12 @@
       return `
       <div class="card ${presencial?'presencial':''} ${done?'concluido':''}" id="card-${idx}">
         <div class="card-top">
-          <div>
-            <div class="card-title">${row.remessa} &mdash; ${row.embarcador}</div>
-            <div class="card-subtitle">${row.base}${row.rne?' &bull; '+row.rne:''}</div>
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            ${modoSelecaoObs?`<input type="checkbox" class="card-select" ${selecionados.has(idx)?'checked':''} onchange="toggleSelecao(${idx}, this.checked)" style="margin-top:3px;cursor:pointer;" title="Selecionar para ações em massa">`:''}
+            <div>
+              <div class="card-title">${row.remessa} &mdash; ${row.embarcador}</div>
+              <div class="card-subtitle">${row.base}${row.rne?' &bull; '+row.rne:''}</div>
+            </div>
           </div>
           <div class="badges">
             <span class="badge ${presencial?'badge-red':'badge-blue'}" id="badge-tipo-${idx}">${presencial?'Presencial':'WhatsApp'}</span>
@@ -836,10 +936,14 @@
           <button class="btn btn-done ${done?'ativo':''}" id="btn-done-${idx}" onclick="toggleConcluido(${idx})">
             <i class="ti ti-check"></i> ${done?'Concluída':'Concluir'}
           </button>
+          <button class="btn btn-obs ${obsMemoria[row.remessa]?'ativo':''}" id="btn-obs-${idx}" onclick="toggleObs(${idx})"><i class="ti ti-note"></i> Obs</button>
           <span style="font-size:12px;color:var(--text-hint);">@ Líder:</span>
           <input class="lider-input" id="lider-input-${idx}" type="text" placeholder="Nome do líder" value="${lider}"
             data-base="${row.base.replace(/"/g,'&quot;')}" oninput="salvarLider(this.dataset.base, this.value, this)">
           ${!invalido?`<label class="toggle-label"><input type="checkbox" ${presencialMemoria[row.remessa]?'checked':''} onchange="togglePresencial(${idx},this.checked)"> Presencial</label>`:''}
+        </div>
+        <div class="obs-wrap" id="obs-wrap-${idx}" style="display:${obsMemoria[row.remessa]?'block':'none'}">
+          <textarea class="obs-textarea" id="obs-input-${idx}" placeholder="Digite a observação (aparece só no template Feishu)..." oninput="salvarObs(${idx}, this.value)">${escHtml(obsMemoria[row.remessa]||'')}</textarea>
         </div>
       </div>`;
     }).join('');
@@ -848,6 +952,8 @@
   // ─── TROCAR PLANILHA ──────────────────────────────────────────────
   function trocarPlanilha() {
     dadosGlobal=[];
+    selecionados.clear();
+    modoSelecaoObs=false;
     Object.keys(presencialMemoria).forEach(k=>delete presencialMemoria[k]); persistirPresencial();
     document.getElementById('filter-base').innerHTML='<option value="">Todas as bases</option>';
     document.getElementById('filter-problema').innerHTML='<option value="">Todos os tipos</option>';
