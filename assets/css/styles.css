@@ -256,12 +256,18 @@ h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--te
 .card-title { font-size: 13.5px; font-weight: 600; letter-spacing: -0.005em; color: var(--text); }
 .card-subtitle { font-size: 12px; color: var(--text-hint); margin-top: 2px; }
 
+/* Cinco colunas fixas: os quatro campos sempre presentes mais o Produto.
+   Com `auto-fit` a coluna do Produto colapsava quando o campo não vinha na
+   planilha e os outros quatro se esticavam, desalinhando os cards entre si.
+   Fixando a contagem, a ausência do Produto deixa a coluna vaga. */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px 20px;
   margin-bottom: 15px;
 }
+@media (max-width: 860px) { .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 580px) { .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .field { font-size: 12px; }
 .field-label { color: var(--text-hint); font-size: 11px; letter-spacing: 0.02em; margin-bottom: 3px; }
 .field-value { color: var(--text); font-weight: 500; font-size: 12.5px; word-break: break-word; }
