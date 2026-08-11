@@ -5,182 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel de Acareações — J&T Express</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --bg: #f5f5f5; --bg-card: #fff; --bg-card2: #fafafa; --border: #e5e5e5;
-      --text: #1a1a1a; --text-muted: #555; --text-hint: #999;
-      --input-bg: #fff; --info-bg: #f0f4ff; --info-border: #c7d4f5; --info-text: #444;
-    }
-    [data-theme="dark"] {
-      --bg: #111; --bg-card: #1e1e1e; --bg-card2: #252525; --border: #333;
-      --text: #eee; --text-muted: #aaa; --text-hint: #666;
-      --input-bg: #252525; --info-bg: #1a1f2e; --info-border: #2d3a5e; --info-text: #bbb;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 1.5rem; transition: background 0.2s, color 0.2s; }
-    .container { max-width: 960px; margin: 0 auto; }
-    h1 { font-size: 20px; font-weight: 600; margin-bottom: 1.5rem; color: var(--text); }
-    .stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
-    .stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font-size: 13px; color: var(--text-muted); }
-    .stat span { font-weight: 600; color: var(--text); }
-    .upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 3rem; text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem; cursor: pointer; transition: background 0.15s; background: var(--bg-card); }
-    .upload-area:hover { background: var(--bg-card2); }
-    .upload-area i { font-size: 36px; display: block; margin-bottom: 10px; color: var(--text-hint); }
-    .assistente-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; flex-wrap: wrap; }
-    .assistente-bar label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
-    .assistente-bar input { font-size: 13px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); color: var(--text); background: var(--input-bg); width: 200px; font-family: inherit; }
-    .prefs-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
-    .prefs-bar strong { font-size: 11px; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.05em; }
-    .pref-toggle { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
-    .filter-bar { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
-    .filter-bar select, .filter-bar input[type=text] { font-size: 13px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-family: inherit; }
-    .bulk-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
-
-    .info-bar { background: var(--info-bg); border: 1px solid var(--info-border); border-radius: 8px; padding: 8px 14px; font-size: 12px; color: var(--info-text); margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 10px; transition: opacity 0.2s; }
-    .card.presencial { border-left: 4px solid #E24B4A; }
-    .card.concluido { opacity: 0.5; border-left: 4px solid #1D9E75; }
-    .card.concluido .card-title { text-decoration: line-through; }
-    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-    .card-title { font-size: 14px; font-weight: 600; color: var(--text); }
-    .card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start; }
-    .badge { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
-    .badge-red { background: #FCEBEB; color: #A32D2D; }
-    .badge-blue { background: #E6F1FB; color: #185FA5; }
-    .badge-amber { background: #FAEEDA; color: #854F0B; }
-    .badge-green { background: #E1F5EE; color: #0F6E56; }
-    .badge-gray { background: #F0F0F0; color: #888; }
-    .badge-done { background: #E1F5EE; color: #0F6E56; }
-    /* badges de status do ticket */
-    .badge-fechado      { background: #F0F0F0; color: #666; }
-    .badge-atribuido    { background: #EEF0FF; color: #4338ca; }
-    .badge-processando  { background: #FFF7E6; color: #92400e; }
-    .badge-concluido-tk { background: #E1F5EE; color: #0F6E56; }
-    [data-theme="dark"] .badge-fechado      { background: #2a2a2a; color: #999; }
-    [data-theme="dark"] .badge-atribuido    { background: #1e1b4b; color: #a5b4fc; }
-    [data-theme="dark"] .badge-processando  { background: #2d1b05; color: #fbbf24; }
-    [data-theme="dark"] .badge-concluido-tk { background: #0a2010; color: #5dcaa5; }
-    [data-theme="dark"] .badge-red { background: #3a1515; color: #f09595; }
-    [data-theme="dark"] .badge-blue { background: #0c2340; color: #85b7eb; }
-    [data-theme="dark"] .badge-amber { background: #2e1f05; color: #fac775; }
-    [data-theme="dark"] .badge-green { background: #0a2010; color: #5dcaa5; }
-    [data-theme="dark"] .badge-gray { background: #2a2a2a; color: #888; }
-    [data-theme="dark"] .badge-done { background: #0a2010; color: #5dcaa5; }
-    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin-bottom: 14px; }
-    .field { font-size: 12px; }
-    .field-label { color: var(--text-hint); margin-bottom: 2px; }
-    .field-value { color: var(--text); font-weight: 500; word-break: break-word; }
-    .card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 13px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); cursor: pointer; text-decoration: none; transition: background 0.15s; font-family: inherit; }
-    .btn:hover { background: var(--bg-card2); }
-    .btn-green { border-color: #1D9E75; color: #0F6E56; }
-    .btn-green:hover { background: #E1F5EE; }
-    [data-theme="dark"] .btn-green:hover { background: #0a2010; }
-    .btn-blue { border-color: #378ADD; color: #185FA5; }
-    .btn-blue:hover { background: #E6F1FB; }
-    [data-theme="dark"] .btn-blue { color: #85b7eb; border-color: #185FA5; }
-    [data-theme="dark"] .btn-blue:hover { background: #0c2340; }
-    .btn-teal { border-color: #0891b2; color: #0e7490; }
-    .btn-teal:hover { background: #ecfeff; }
-    [data-theme="dark"] .btn-teal { color: #67e8f9; border-color: #0891b2; }
-    [data-theme="dark"] .btn-teal:hover { background: #0a1f2a; }
-    .btn-done { border-color: #1D9E75; color: #0F6E56; }
-    .btn-done:hover { background: #E1F5EE; }
-    .btn-done.ativo { background: #E1F5EE; font-weight: 600; }
-    [data-theme="dark"] .btn-done { color: #5dcaa5; border-color: #1D9E75; }
-    [data-theme="dark"] .btn-done:hover, [data-theme="dark"] .btn-done.ativo { background: #0a2010; }
-    .btn-copied { border-color: #1D9E75 !important; color: #0F6E56 !important; background: #E1F5EE !important; }
-    [data-theme="dark"] .btn-copied { background: #0a2010 !important; }
-    .btn-red { border-color: #D85A30; color: #993C1D; opacity: 0.6; cursor: not-allowed; }
-    .btn-sm { padding: 3px 10px; font-size: 11px; }
-    .lider-input { font-size: 12px; padding: 5px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card2); color: var(--text); width: 140px; font-family: inherit; }
-    .obs-wrap { margin-top: 10px; }
-    .obs-textarea { width: 100%; font-size: 12px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: inherit; resize: vertical; min-height: 50px; }
-    .btn-obs.ativo { border-color: #378ADD; color: #185FA5; }
-    [data-theme="dark"] .btn-obs.ativo { color: #85b7eb; border-color: #185FA5; }
-    .toggle-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); cursor: pointer; user-select: none; }
-    .empty { text-align: center; color: var(--text-hint); padding: 3rem 1rem; font-size: 14px; }
-    .toast { position: fixed; bottom: 24px; right: 24px; background: #1D9E75; color: white; padding: 11px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .toast.show { opacity: 1; }
-    .theme-toggle { position: fixed; top: 16px; right: 16px; z-index: 500; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 13px; font-size: 12px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; transition: background 0.15s; }
-    .theme-toggle:hover { background: var(--bg-card2); }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-    .modal { background: var(--bg-card); border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-    .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
-    .modal .modal-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 1.25rem; }
-    .modal-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .modal-row label { font-size: 13px; color: var(--info-text); width: 170px; flex-shrink: 0; }
-    .modal-row label span.req { color: #E24B4A; margin-left: 2px; }
-    .modal-row select { flex: 1; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: inherit; }
-    .modal-row select.auto { border-color: #1D9E75; background: #f4fdf9; }
-    [data-theme="dark"] .modal-row select.auto { background: #0a2010; }
-    .modal-row select.missing { border-color: #E24B4A; background: #fff8f8; }
-    [data-theme="dark"] .modal-row select.missing { background: #2a0a0a; }
-    .modal-legend { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); margin-bottom: 1rem; flex-wrap: wrap; }
-    .modal-legend span { display: flex; align-items: center; gap: 4px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-    .dot-green { background: #1D9E75; } .dot-red { background: #E24B4A; } .dot-gray { background: #ccc; }
-    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-    .modal-saved-notice { background: #E1F5EE; border: 1px solid #1D9E75; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #0F6E56; margin-bottom: 1rem; display: none; }
-    [data-theme="dark"] .modal-saved-notice { background: #0a2010; color: #5dcaa5; border-color: #0F6E56; }
-
-
-  </style>
 </head>
 <body>
 <div class="container">
 
-  <button class="theme-toggle" id="theme-toggle" onclick="alternarTema()" title="Alternar tema">
-    <i class="ti ti-moon" id="theme-icon"></i>
-    <span id="theme-label">Modo escuro</span>
-  </button>
+  <div class="topo">
+    <h1>Painel de Acareações — J&T Express</h1>
 
-  <h1>Painel de Acareações — J&T Express</h1>
+    <details class="menu" id="menu-ajustes">
+      <summary><i class="ti ti-settings"></i> Ajustes</summary>
+      <div class="menu-painel menu-painel--direita">
+        <div class="menu-titulo">Atendente</div>
+        <div class="assistente-bar">
+          <label for="assistente-input">Responsável pelos atendimentos</label>
+          <input id="assistente-input" type="text" placeholder="Seu nome">
+        </div>
 
-  <div class="assistente-bar">
-    <label for="assistente-input"><i class="ti ti-user"></i> Atendente responsável:</label>
-    <input id="assistente-input" type="text" placeholder="Seu nome">
+        <div class="menu-separador"></div>
+
+        <div class="menu-titulo">Preferências</div>
+        <div class="prefs-bar">
+          <label class="pref-toggle">
+            <input type="checkbox" id="pref-produto">
+            Incluir produto no ativo
+          </label>
+          <label class="pref-toggle">
+            <input type="checkbox" id="pref-valor">
+            Incluir valor no Template Feishu
+          </label>
+          <label class="pref-toggle">
+            <input type="checkbox" id="pref-tel-entregador">
+            Incluir telefone do entregador no Template Feishu
+          </label>
+          <span class="prefs-nota">— aplicado se houver a coluna na planilha</span>
+        </div>
+
+        <div class="menu-separador"></div>
+
+        <button class="theme-toggle" id="theme-toggle" title="Alternar tema">
+          <i class="ti ti-moon" id="theme-icon"></i>
+          <span id="theme-label">Modo escuro</span>
+        </button>
+      </div>
+    </details>
   </div>
 
-  <div class="prefs-bar">
-    <strong>Preferências:</strong>
-    <label class="pref-toggle">
-      <input type="checkbox" id="pref-produto" onchange="salvarPrefs()">
-      Incluir produto no ativo
-    </label>
-    <label class="pref-toggle">
-      <input type="checkbox" id="pref-valor" onchange="salvarPrefs()">
-      Incluir valor no Template Feishu
-    </label>
-    <label class="pref-toggle">
-      <input type="checkbox" id="pref-tel-entregador" onchange="salvarPrefs()">
-      Incluir telefone do entregador no Template Feishu
-    </label>
-    <span style="color:var(--text-hint);font-size:11px;">— aplicado se houver a coluna na planilha</span>
-  </div>
-
-  <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+  <div class="upload-area" id="upload-area">
     <i class="ti ti-file-spreadsheet"></i>
     Clique para carregar o Excel do BI
-    <div style="font-size:12px;margin-top:8px;color:var(--text-hint);">Arquivo .xlsx exportado do BI</div>
+    <div class="upload-hint">Arquivo .xlsx exportado do BI</div>
     <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none">
   </div>
 
-  <div class="info-bar" id="info-bar" style="display:none"></div>
-
-  <div class="stats" id="stats" style="display:none">
-    <div class="stat">Acareações: <span id="st-total">0</span></div>
-    <div class="stat">WhatsApp: <span id="st-wp">0</span></div>
-    <div class="stat">Presencial: <span id="st-pres">0</span></div>
-    <div class="stat">Concluídas: <span id="st-done">0</span></div>
+  <div class="resumo">
+    <div class="info-bar" id="info-bar" style="display:none"></div>
+    <div class="stats" id="stats" style="display:none">
+      <div class="stat">Acareações: <span id="st-total">0</span></div>
+      <div class="stat">WhatsApp: <span id="st-wp">0</span></div>
+      <div class="stat">Presencial: <span id="st-pres">0</span></div>
+      <div class="stat">Concluídas: <span id="st-done">0</span></div>
+    </div>
   </div>
 
   <div class="filter-bar" id="filter-bar" style="display:none">
-    <i class="ti ti-filter" style="color:var(--text-hint);font-size:16px;"></i>
-    <select id="filter-base"><option value="">Todas as bases</option></select>
-    <select id="filter-problema"><option value="">Todos os tipos</option></select>
+    <input type="text" id="filter-search" placeholder="Buscar remessa...">
 
     <select id="filter-ticket-status">
       <option value="">Todos os status do ticket</option>
@@ -190,40 +80,68 @@
       <option value="concluido_tk">Processamento concluído</option>
     </select>
 
-    <select id="filter-assistente">
-      <option value="">Todos os assistentes</option>
-    </select>
-
-    <select id="filter-status">
-      <option value="">Todos os status</option>
-      <option value="pendente">Pendentes</option>
-      <option value="concluido">Concluídas</option>
-    </select>
-    <select id="sort-order">
-      <option value="">Ordenar por...</option>
-      <option value="valor-asc">Valor ↑ (menor)</option>
-      <option value="valor-desc">Valor ↓ (maior)</option>
-      <option value="prazo-asc">Prazo ↑ (mais urgente)</option>
-      <option value="prazo-desc">Prazo ↓ (menos urgente)</option>
-    </select>
-    <input type="text" id="filter-search" placeholder="Buscar remessa..." style="width:160px;">
+    <details class="menu" id="menu-filtros">
+      <summary><i class="ti ti-filter"></i> Filtros</summary>
+      <div class="menu-painel menu-painel--esquerda">
+        <div class="menu-titulo">Refinar</div>
+        <label class="campo-filtro">
+          <span>Base</span>
+          <select id="filter-base"><option value="">Todas as bases</option></select>
+        </label>
+        <label class="campo-filtro">
+          <span>Tipo de problema</span>
+          <select id="filter-problema"><option value="">Todos os tipos</option></select>
+        </label>
+        <label class="campo-filtro">
+          <span>Assistente</span>
+          <select id="filter-assistente"><option value="">Todos os assistentes</option></select>
+        </label>
+        <label class="campo-filtro">
+          <span>Situação</span>
+          <select id="filter-status">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendentes</option>
+            <option value="concluido">Concluídas</option>
+          </select>
+        </label>
+        <label class="campo-filtro">
+          <span>Ordenar</span>
+          <select id="sort-order">
+            <option value="">Ordenar por...</option>
+            <option value="valor-asc">Valor ↑ (menor)</option>
+            <option value="valor-desc">Valor ↓ (maior)</option>
+            <option value="prazo-asc">Prazo ↑ (mais urgente)</option>
+            <option value="prazo-desc">Prazo ↓ (menos urgente)</option>
+          </select>
+        </label>
+      </div>
+    </details>
   </div>
 
   <div class="bulk-bar" id="bulk-bar" style="display:none">
     <span id="bulk-count">0 tickets visíveis</span>
-    <button class="btn btn-blue" id="btn-copiar-remessas" onclick="copiarRemessasFiltradas()"><i class="ti ti-copy"></i> Copiar remessas</button>
-    <button class="btn btn-green" id="btn-baixar-planilha" onclick="baixarPlanilhaFiltrada()"><i class="ti ti-file-download"></i> Baixar planilha (.xlsx)</button>
-    <span style="width:1px;height:18px;background:var(--border);"></span>
-    <button class="btn btn-sm" id="btn-bulk-obs-toggle" onclick="toggleBulkObs()"><i class="ti ti-note"></i> Obs em massa</button>
-    <span id="bulk-selecao-controles" style="display:none;align-items:center;gap:10px;">
+    <span id="bulk-selecao-controles" style="display:none">
       <span id="bulk-selected-count">0 selecionados</span>
-      <button class="btn btn-sm" onclick="selecionarTodosVisiveis()"><i class="ti ti-checkbox"></i> Selecionar visíveis</button>
-      <button class="btn btn-sm" onclick="limparSelecao()"><i class="ti ti-x"></i> Limpar seleção</button>
+      <button class="btn btn-sm" id="btn-selecionar-visiveis"><i class="ti ti-checkbox"></i> Selecionar visíveis</button>
+      <button class="btn btn-sm" id="btn-limpar-selecao"><i class="ti ti-x"></i> Limpar seleção</button>
     </span>
+
+    <details class="menu" id="menu-acoes">
+      <summary><i class="ti ti-dots"></i> Ações</summary>
+      <div class="menu-painel menu-painel--direita">
+        <div class="menu-titulo">Sobre os tickets visíveis</div>
+        <div class="acoes-lista">
+          <button class="btn btn-blue" id="btn-copiar-remessas"><i class="ti ti-copy"></i> Copiar remessas</button>
+          <button class="btn btn-green" id="btn-baixar-planilha"><i class="ti ti-file-download"></i> Baixar planilha (.xlsx)</button>
+          <button class="btn" id="btn-bulk-obs-toggle"><i class="ti ti-note"></i> Obs em massa</button>
+        </div>
+      </div>
+    </details>
   </div>
-  <div class="obs-wrap" id="bulk-obs-wrap" style="display:none;margin-bottom:1rem;">
+
+  <div class="obs-wrap" id="bulk-obs-wrap" style="display:none">
     <textarea class="obs-textarea" id="bulk-obs-input" placeholder="Digite a observação para aplicar aos selecionados..."></textarea>
-    <button class="btn btn-blue btn-sm" style="margin-top:6px;" onclick="aplicarObsEmMassa()"><i class="ti ti-check"></i> Aplicar aos selecionados</button>
+    <button class="btn btn-blue btn-sm obs-aplicar" id="btn-aplicar-obs"><i class="ti ti-check"></i> Aplicar aos selecionados</button>
   </div>
 
   <div id="cards-container"></div>
@@ -231,792 +149,14 @@
   <div id="modal-container"></div>
 </div>
 
-<script>
-  // ─── TEMA ─────────────────────────────────────────────────────────
-  function alternarTema() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const novo = isDark ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', novo);
-    localStorage.setItem('tema', novo);
-    document.getElementById('theme-icon').className = isDark ? 'ti ti-moon' : 'ti ti-sun';
-    document.getElementById('theme-label').textContent = isDark ? 'Modo escuro' : 'Modo claro';
-  }
-  (function () {
-    const s = localStorage.getItem('tema') || 'light';
-    if (s === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      document.addEventListener('DOMContentLoaded', () => {
-        const ic = document.getElementById('theme-icon');
-        const lb = document.getElementById('theme-label');
-        if (ic) ic.className = 'ti ti-sun';
-        if (lb) lb.textContent = 'Modo claro';
-      });
-    }
-  })();
-
-  // ─── PERSISTÊNCIA ─────────────────────────────────────────────────
-  const lideresMemoria    = JSON.parse(localStorage.getItem('lideres')    || '{}');
-  const presencialMemoria = JSON.parse(localStorage.getItem('presencial') || '{}');
-  const concluidoMemoria  = JSON.parse(localStorage.getItem('concluido')  || '{}');
-  const obsMemoria        = JSON.parse(localStorage.getItem('obs')        || '{}');
-  let dadosGlobal = [];
-  let selecionados = new Set();
-  let modoSelecaoObs = false;
-
-  function persistirLideres()    { localStorage.setItem('lideres',    JSON.stringify(lideresMemoria)); }
-  function persistirPresencial() { localStorage.setItem('presencial', JSON.stringify(presencialMemoria)); }
-  function persistirConcluido()  { localStorage.setItem('concluido',  JSON.stringify(concluidoMemoria)); }
-  function persistirObs()        { localStorage.setItem('obs',        JSON.stringify(obsMemoria)); }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const nome = localStorage.getItem('atendente') || '';
-    const inp = document.getElementById('assistente-input');
-    if (inp && nome) inp.value = nome;
-    carregarPrefs();
-  });
-
-  // ─── PREFERÊNCIAS ─────────────────────────────────────────────────
-  function carregarPrefs() {
-    const p = JSON.parse(localStorage.getItem('prefs') || '{}');
-    document.getElementById('pref-produto').checked = !!p.produto;
-    document.getElementById('pref-valor').checked   = !!p.valor;
-    document.getElementById('pref-tel-entregador').checked = !!p.telEntregador;
-  }
-  function salvarPrefs() {
-    localStorage.setItem('prefs', JSON.stringify({
-      produto: document.getElementById('pref-produto').checked,
-      valor:   document.getElementById('pref-valor').checked,
-      telEntregador: document.getElementById('pref-tel-entregador').checked,
-    }));
-  }
-  function getPrefs() {
-    return JSON.parse(localStorage.getItem('prefs') || '{}');
-  }
-
-  // ─── MAPA DE PROBLEMAS ────────────────────────────────────────────
-  const MAPA_PROBLEMAS = [
-    { chaves: ['[latam] delivered but not received', 'delivered but not received'], saida: 'Assinado não recebido' },
-    { chaves: ['assinado nao recebido/签收未收到', 'assinado nao recebido'], saida: 'Assinado não recebido' },
-    { chaves: ['verificacao do pod/pod核实', 'verificacao do pod'], saida: 'Verificação do POD' },
-    { chaves: ['item damaged (packing damaged)', 'avaria apos entrega', 'avaria apos', 'danificado'], saida: 'Avaria após entrega' },
-    { chaves: ['incorrect item', 'incorreto'], saida: 'Item incorreto' },
-    { chaves: ['missing item or empty package', 'item faltante', 'pacote vazio', 'item faltante ou pacote vazio'], saida: 'Item faltante ou pacote vazio' },
-    { chaves: ['pacote perdido'], saida: 'Pacote Perdido' },
-    { chaves: ['troca de etiqueta', 'troca'], saida: 'Troca de etiqueta' },
-  ];
-
-  // ─── NORMALIZAÇÃO DO STATUS DO TICKET ────────────────────────────
-  // Retorna uma chave canônica para cada valor possível do BI
-  function normalizarStatusTicket(v) {
-    const s = strip(v);
-    if (!s) return 'sem_status';
-    if (s.includes('para ser atribuido') || s.includes('para atribuir') || s === 'para ser atribuído') return 'para_atribuir';
-    if (s.includes('processamento concluido') || s.includes('processamento concluído')) return 'concluido_tk';
-    if (s.includes('processando')) return 'processando';
-    if (s.includes('fechado')) return 'fechado';
-    return 'sem_status';
-  }
-
-  // Label e classe de badge para cada status canônico
-  const STATUS_TICKET_META = {
-    para_atribuir: { label: 'Para atribuir',           cls: 'badge-atribuido'    },
-    processando:   { label: 'Processando',              cls: 'badge-processando'  },
-    fechado:       { label: 'Fechado',                  cls: 'badge-fechado'      },
-    concluido_tk:  { label: 'Processamento concluído',  cls: 'badge-concluido-tk' },
-    sem_status:    { label: 'Sem status',               cls: 'badge-gray'         },
-  };
-
-  const CAMPOS = [
-    { id: 'remessa',       label: 'Remessa / Nº do pedido',        obrigatorio: true,  candidatos: ['remessa', 'numero da remessa', 'numero do pedido', 'numero pedido', 'pedido', 'waybill', 'tracking', 'cod remessa', 'codigo remessa'] },
-    { id: 'problema',      label: 'Tipo de problema (nível 2)',     obrigatorio: true,  candidatos: ['tipo de item problematico nivel 2', 'tipo de item problematico nivel2', 'tipo de item problematico', 'problema nivel 2', 'problema nivel2', 'nivel 2', 'nivel2', 'tipo do problema', 'tipo problema'] },
-    { id: 'base',          label: 'Base responsável',               obrigatorio: true,  candidatos: ['base', 'base responsavel', 'base responsável', 'base de distribuicao', 'base distribuicao', 'hub responsavel', 'hub'] },
-    { id: 'statusTicket',  label: 'Status do Ticket',               obrigatorio: false, candidatos: ['status', 'status do ticket', 'status ticket', 'status da ocorrencia', 'status ocorrencia', 'status do chamado', 'situacao do ticket', 'situacao ticket'] },
-    // assistente vem ANTES de tel para evitar que 'assistente' bata em coluna de telefone
-    { id: 'assistenteResp',label: 'Assistente Responsável',         obrigatorio: false, candidatos: ['assistente', 'atendente', 'assistente responsavel', 'assistente responsável', 'atendente responsavel', 'atendente responsável', 'responsavel', 'responsável'] },
-    { id: 'tel',           label: 'Telefone do destinatário',       obrigatorio: false, candidatos: ['telefone', 'celular', 'tel', 'fone', 'contato', 'telefone do destinatario', 'telefone do destinatário', 'telefone destinatario', 'telefone do cliente', 'celular do destinatario', 'celular destinatario'] },
-    { id: 'telEntregador', label: 'Telefone do entregador',         obrigatorio: false, candidatos: ['telefone entregador', 'telefone do entregador', 'celular entregador', 'celular do entregador', 'tel entregador', 'fone entregador', 'contato entregador', 'whatsapp entregador', 'telefone motorista', 'celular motorista', 'tel motorista', 'contato do entregador'] },
-    { id: 'entregador',    label: 'Entregador',                     obrigatorio: false, candidatos: ['entregador', 'nome do entregador', 'entregador responsavel', 'motorista', 'courier'] },
-    // data da entrega listada primeiro para ter prioridade sobre variações
-    { id: 'dataBaixa',     label: 'Data da entrega / baixa',        obrigatorio: false, candidatos: ['data da entrega', 'data de entrega', 'data entrega', 'data da baixa', 'data de baixa', 'data baixa', 'horario de entrega', 'horario entrega'] },
-    { id: 'prazo',         label: 'Prazo regional / vencimento',    obrigatorio: false, candidatos: ['prazo', 'vencimento', 'prazo regional', 'prazo de vencimento', 'data de vencimento', 'prazo limite'] },
-    { id: 'valor',         label: 'Valor do produto',               obrigatorio: false, candidatos: ['valor', 'preco', 'price', 'valor declarado', 'valor do produto', 'valor do pedido', 'valor mercadoria', 'valor nota fiscal', 'valor nf'] },
-    { id: 'item',          label: 'Item / Descrição do produto',    obrigatorio: false, candidatos: ['conteudo do pacote', 'conteudo', 'produto', 'descricao', 'description', 'descricao do produto', 'descricao do item', 'nome do produto', 'nome do item', 'descricao produto', 'descricao item', 'item'] },
-    { id: 'embarcador',    label: 'Embarcador / Origem do pedido',  obrigatorio: false, candidatos: ['embarcador', 'loja', 'origem', 'origem do pedido', 'nome do embarcador', 'lojista', 'shipper', 'seller'] },
-    // nome destinatario/destinatário com typo incluído
-    { id: 'destinatario',  label: 'Nome do destinatário',           obrigatorio: false, candidatos: ['destinatario', 'destinatário', 'cliente', 'nome destainario', 'nome do destinatario', 'nome do destinatário', 'nome destinatario', 'nome destinatário', 'nome do cliente', 'recipient'] },
-    { id: 'rne',           label: 'RNE / Focal',                    obrigatorio: false, candidatos: ['rne', 'focal', 'numero rne', 'cod rne'] },
-  ];
-
-  // ─── UTILITÁRIOS ──────────────────────────────────────────────────
-  function strip(s) { return String(s||'').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
-
-  function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  function normalizar_problema(v) {
-    const s = strip(v); if (!s) return null;
-    for (const e of MAPA_PROBLEMAS) for (const c of e.chaves) if (s===c||s.includes(c)) return e.saida;
-    return null;
-  }
-
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-  }
-
-  function encontrarAba(wb) {
-    for (const n of wb.SheetNames) if (n.toLowerCase().includes('export')) return n;
-    for (const n of wb.SheetNames) {
-      const raw = XLSX.utils.sheet_to_json(wb.Sheets[n], {defval:'',range:0});
-      if (raw.length>1 && Object.keys(raw[0]).join(' ').toLowerCase().includes('base responsavel')) return n;
-    }
-    return wb.SheetNames[wb.SheetNames.length-1];
-  }
-
-  function detectarColuna(cols, cands, usadas) {
-    usadas = usadas || new Set();
-    // Passo 1: match exato (sem acentos), ignorando colunas já usadas por outro campo
-    for (const c of cands) {
-      const cl = strip(c);
-      for (const col of cols) if (!usadas.has(col) && strip(col) === cl) return col;
-    }
-    // Passo 2: a coluna da planilha contém o candidato como palavra/trecho completo
-    for (const c of cands) {
-      const cl = strip(c);
-      for (const col of cols) {
-        const sc = strip(col);
-        if (!usadas.has(col) && sc.includes(cl)) return col;
-      }
-    }
-    return null;
-  }
-
-  function tratarNumero(v) {
-    if (v===null||v===undefined||String(v).trim()==='') return '';
-    const s=String(v).trim(), n=parseFloat(s);
-    if (!isNaN(n)&&s.match(/^[\d.eE+\-]+$/)) return String(Math.round(n));
-    return s;
-  }
-
-  function tratarValor(v) {
-    if (v===null||v===undefined||String(v).trim()==='') return null;
-    const s = String(v).trim().replace(',','.');
-    const n = parseFloat(s);
-    return isNaN(n) ? null : n;
-  }
-
-  function formatarValor(n) {
-    if (n===null||n===undefined) return null;
-    return 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-  }
-
-  function normalizar_embarcador(v) {
-    const s=String(v||'').toLowerCase().trim();
-    const m={shein:'Shein',cainiao:'Cainiao',mercado:'Mercado Livre',shopee:'Shopee',temu:'Temu',wepink:'WePink',jequiti:'Jequiti',tiktok:'TikTok'};
-    for (const k in m) if (s.includes(k)) return m[k];
-    return s.replace(/\b\w/g,c=>c.toUpperCase());
-  }
-
-  function formatarDataExcel(v) {
-    if (v===null||v===undefined||String(v).trim()===''||String(v)==='NaN') return 'N/A';
-    let d;
-    if (typeof v==='number') d=new Date(Math.round((v-25569)*86400*1000));
-    else if (v instanceof Date) d=v;
-    else d=new Date(v);
-    if (isNaN(d)) return String(v).trim()||'N/A';
-    const pad=n=>String(n).padStart(2,'0');
-    const dt=`${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
-    const h=d.getUTCHours(),mi=d.getUTCMinutes();
-    return (h===0&&mi===0)?dt:`${dt} às ${pad(h)}h${pad(mi)}`;
-  }
-
-  function ajustarVencimento(v) {
-    if (v===null||v===undefined||String(v).trim()===''||String(v)==='NaN') return 'N/A';
-    if (typeof v!=='number') {
-      const s=String(v).trim();
-      if (!s) return 'N/A';
-      return s.replace(/\s*-\s*/,' - ');
-    }
-    let d=new Date(Math.round((v-25569)*86400*1000));
-    if (isNaN(d)) return String(v).trim()||'N/A';
-    const h=d.getUTCHours(), pad=n=>String(n).padStart(2,'0');
-    if (h>=17) return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()} às 17h00`;
-    if (h<8) { const a=new Date(d.getTime()-86400000); return `${pad(a.getUTCDate())}/${pad(a.getUTCMonth()+1)}/${a.getUTCFullYear()} às 17h00`; }
-    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()} às ${pad(h)}h${pad(d.getUTCMinutes())}`;
-  }
-
-  function prazoTimestamp(v) {
-    if (v===null||v===undefined||String(v).trim()==='') return Infinity;
-    if (typeof v==='number') return Math.round((v-25569)*86400*1000);
-    const s = String(v).trim();
-    const m = s.match(/^(\d{1,2})\/(\d{1,2})\s*-\s*(\d{1,2})h?/);
-    if (m) {
-      const ano = new Date().getFullYear();
-      const dia=parseInt(m[1]), mes=parseInt(m[2])-1, hora=parseInt(m[3]);
-      const d = new Date(ano, mes, dia, hora, 0, 0);
-      return isNaN(d)?Infinity:d.getTime();
-    }
-    const d=new Date(s); return isNaN(d)?Infinity:d.getTime();
-  }
-
-  function isNumeroInvalido(tel) {
-    const t=String(tel||'').replace(/\D/g,'');
-    return !t||t==='0'||t==='00'||t.length<8;
-  }
-
-  function artigo_embarcador(nome) {
-    const n=String(nome).toLowerCase();
-    if (['mercado','mercado livre','magalu','kwai'].some(m=>n.includes(m))) return 'do';
-    if (['cainiao','shein'].some(m=>n.includes(m))) return 'da';
-    if (['wepink'].some(m=>n.includes(m))) return 'na';
-    if (['tiktok'].some(m=>n.includes(m))) return 'no';
-    if (nome.match(/[aei]$/i)) return 'da';
-    return 'do';
-  }
-
-  // ─── MAPEAMENTO ───────────────────────────────────────────────────
-  function assinatura(cols) { return cols.slice().sort().join('|'); }
-  function carregarMapeamento(sig) {
-    try { const r=localStorage.getItem('col_map_'+btoa(sig).slice(0,40)); return r?JSON.parse(r):null; } catch(e){return null;}
-  }
-  function salvarMapeamento(sig,mapa) {
-    try { localStorage.setItem('col_map_'+btoa(sig).slice(0,40),JSON.stringify(mapa)); } catch(e){}
-  }
-  function limparMapeamentos() {
-    try { Object.keys(localStorage).filter(k=>k.startsWith('col_map_')).forEach(k=>localStorage.removeItem(k)); showToast('Mapeamentos apagados!'); } catch(e){}
-  }
-
-  // ─── MODAL MAPEAMENTO ─────────────────────────────────────────────
-  function abrirModalMapeamento(cols, mapaAtual, foiSalvo, onConfirm) {
-    const mc=document.getElementById('modal-container');
-
-    const linhas = CAMPOS.map(campo => {
-      const cur=mapaAtual[campo.id]||'';
-      const cls=cur?'auto':(campo.obrigatorio?'missing':'');
-      return `<div class="modal-row">
-        <label>${campo.label}${campo.obrigatorio?'<span class="req">*</span>':''}</label>
-        <select id="map-${campo.id}" class="${cls}">
-          ${cols.map(c=>`<option value="${c.replace(/"/g,'&quot;')}" ${c===cur?'selected':''}>${c}</option>`).join('')}
-          <option value="" ${!cur?'selected':''}>— não usar —</option>
-        </select>
-      </div>`;
-    }).join('');
-
-    mc.innerHTML=`<div class="modal-overlay"><div class="modal">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <h2><i class="ti ti-table-options"></i> Confirme as colunas da planilha</h2>
-        <button onclick="fecharModal()" style="border:none;background:none;font-size:18px;color:var(--text-hint);padding:2px 6px;cursor:pointer;">&#x2715;</button>
-      </div>
-      <p class="modal-sub">Verifique se cada campo foi associado à coluna correta.</p>
-      <div class="modal-saved-notice" id="modal-saved-notice"><i class="ti ti-check"></i> Mapeamento salvo anteriormente — verifique se ainda está correto.</div>
-      <div class="modal-legend">
-        <span><span class="dot dot-green"></span> Detectado automaticamente</span>
-        <span><span class="dot dot-red"></span> Obrigatório não encontrado</span>
-        <span><span class="dot dot-gray"></span> Opcional não encontrado</span>
-      </div>
-      ${linhas}
-      <div class="modal-footer">
-        <button class="btn btn-sm" onclick="limparMapeamentos()"><i class="ti ti-trash"></i> Limpar mapeamentos salvos</button>
-        <button class="btn btn-blue btn-sm" id="btn-confirmar-mapa"><i class="ti ti-check"></i> Confirmar e carregar</button>
-      </div>
-    </div></div>`;
-
-    if (foiSalvo) document.getElementById('modal-saved-notice').style.display='block';
-    CAMPOS.forEach(campo=>{
-      const sel=document.getElementById('map-'+campo.id);
-      if (sel) sel.addEventListener('change',()=>{ sel.className=sel.value?'auto':(campo.obrigatorio?'missing':''); });
-    });
-    document.getElementById('btn-confirmar-mapa').addEventListener('click',confirmarMapeamento);
-    document.querySelector('#modal-container .modal-overlay').addEventListener('click',function(e){ if(e.target===this) fecharModal(); });
-    window._colsParaMapeamento=cols; window._onConfirmMapeamento=onConfirm;
-  }
-
-  function fecharModal() {
-    document.getElementById('modal-container').innerHTML='';
-    const old=document.getElementById('file-input');
-    if (old) { const n=document.createElement('input'); n.type='file'; n.id='file-input'; n.accept='.xlsx,.xls'; n.style.display='none'; n.addEventListener('change',handleFileChange); old.replaceWith(n); }
-  }
-
-  function confirmarMapeamento() {
-    const cols=window._colsParaMapeamento, mapa={}, faltando=[];
-    CAMPOS.forEach(campo=>{ const sel=document.getElementById('map-'+campo.id); const val=sel?sel.value:''; mapa[campo.id]=val||null; if(campo.obrigatorio&&!val) faltando.push(campo.label); });
-    if (faltando.length) { alert('Campos obrigatórios não mapeados:\n• '+faltando.join('\n• ')); return; }
-    salvarMapeamento(assinatura(cols),mapa); fecharModal();
-    if (window._onConfirmMapeamento) window._onConfirmMapeamento(mapa);
-  }
-
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&document.getElementById('modal-container').innerHTML) fecharModal(); });
-
-  // ─── PROCESSAMENTO ────────────────────────────────────────────────
-  function processarDados(raw, mapa) {
-    let ignorados=0;
-    const dados=raw.map(r=>{
-      const prob=normalizar_problema(mapa.problema?r[mapa.problema]:'');
-      if (!prob) { ignorados++; return null; }
-      const base=mapa.base?String(r[mapa.base]||'').toUpperCase().trim():'N/A';
-      const prazoRaw=mapa.prazo?r[mapa.prazo]:null;
-      const valorRaw=mapa.valor?r[mapa.valor]:null;
-      const valorNum=tratarValor(valorRaw);
-      const itemRaw=mapa.item?String(r[mapa.item]||'').trim():'';
-      // ★ captura e normaliza o status do ticket
-      const statusTicketRaw = mapa.statusTicket ? String(r[mapa.statusTicket]||'').trim() : '';
-      const statusTicket    = normalizarStatusTicket(statusTicketRaw);
-
-      return {
-        remessa:      mapa.remessa      ? tratarNumero(r[mapa.remessa])                    : '',
-        tel:          mapa.tel          ? String(r[mapa.tel]||'').trim()                   : '',
-        telEntregador:mapa.telEntregador? String(r[mapa.telEntregador]||'').trim()         : '',
-        entregador:   mapa.entregador   ? String(r[mapa.entregador]||'N/A').trim()         : 'N/A',
-        dataBaixa:    mapa.dataBaixa    ? formatarDataExcel(r[mapa.dataBaixa])             : 'N/A',
-        vencimento:   prazoRaw!=null    ? ajustarVencimento(prazoRaw)                      : 'N/A',
-        prazoTs:      prazoRaw!=null    ? prazoTimestamp(prazoRaw)                         : Infinity,
-        valorNum:     valorNum,
-        valorFmt:     formatarValor(valorNum),
-        item:         itemRaw,
-        base,
-        embarcador:   mapa.embarcador   ? normalizar_embarcador(r[mapa.embarcador])        : 'N/A',
-        problema:     prob,
-        destinatario: mapa.destinatario ? String(r[mapa.destinatario]||'Cliente').trim()   : 'Cliente',
-        rne:          mapa.rne          ? String(r[mapa.rne]||'').trim()                   : '',
-        statusTicket,
-        statusTicketRaw,
-        assistenteResp: mapa.assistenteResp ? String(r[mapa.assistenteResp]||'').trim() : '',
-      };
-    }).filter(Boolean);
-    return { dados, ignorados };
-  }
-
-  function gerarMensagemWpp(row, assistente) {
-    const nome=row.destinatario||'Cliente';
-    const emb=row.embarcador||'N/A';
-    const rem=row.remessa||'N/A';
-    const data=row.dataBaixa||'N/A';
-    const usarProduto = getPrefs().produto && row.item;
-    const produtoStr = usarProduto ? `, produto *${row.item}*` : '';
-
-    if (emb.toLowerCase().includes('mercado')) {
-      const mlItem = row.item || 'N/A';
-      return `Olá, *${nome}*!\n\nMe chamo ${assistente} e sou da Transportadora J&T Express, parceira de entregas do *Mercado Livre*.\nVerificamos que você abriu uma reclamação referente ao produto *${mlItem}*, ID *${rem}* e entregue dia *${data}*.\n\nPara que possamos auxiliar, escolha uma opção:\n\n1 - Recebi o produto\n2 - Não recebi o produto\n3 - Recebi o pacote com produtos faltantes\n4 - Recebi o produto com defeito\n5 - Recebi um produto diferente do comprado`;
-    }
-    if (emb.toLowerCase().includes('tiktok')) {
-      return `Olá, *${nome}*!\n\nMeu nome é ${assistente}, representante da transportadora J&T Express.\nVerificamos que você abriu uma reclamação referente ao pedido *${rem}*${produtoStr}, realizado no *${emb}*.\n\nPara que possamos auxiliar, escolha uma das opções abaixo e responda apenas com o n°:\n\n1 - Recebi o produto.\n2 - Recebi o produto, corretamente lacrado e embalado.\n3 - Não recebi o produto\n4 - Recebi o produto com itens faltantes\n5 - Recebi o produto, porém com a embalagem externa em más condições.\n6 - Recebi o produto diferente do que comprei\n7 - Recebi o produto com defeito`;
-    }
-    if (emb.toLowerCase().includes('wepink')) {
-      return `Olá, *${nome}*!\n\nMeu nome é ${assistente}, representante da transportadora J&T Express.\nVerificamos que você abriu uma reclamação referente ao pedido *${rem}*${produtoStr}, realizado na *${emb}*.\n\nPara que possamos auxiliar, escolha uma das opções abaixo e responda apenas com o n°:\n\n1 - Recebi o produto.\n2 - Recebi o produto, corretamente lacrado e embalado.\n3 - Não recebi o produto\n4 - Recebi o produto com itens faltantes\n5 - Recebi o produto, porém com a embalagem externa em más condições.\n6 - Recebi o produto diferente do que comprei\n7 - Recebi o produto com defeito`;
-    }
-    const art=artigo_embarcador(emb);
-    return `Olá, *${nome}*!\n\nSou ${assistente}, representante da Transportadora J&T Express, parceira de entregas ${art} *${emb}*\nVerificamos que você abriu uma reclamação referente ao pedido *${rem}*${produtoStr}\n\nPara que possamos auxiliar, escolha uma opção:\n\n1️⃣ Recebi o produto\n2️⃣ Não recebi o produto\n3️⃣ Recebi o pacote com produtos faltantes\n4️⃣ Recebi o produto com defeito\n5️⃣ Recebi um produto diferente do comprado\n6️⃣ Recebi o produto danificado`;
-  }
-
-  function gerarTemplateFeishu(row, assistente, lider, presencial, obs) {
-    const tel=presencial?'Apenas presencial':(row.tel||'N/A');
-    const linhas=[
-      ``,
-      `${row.problema} - ${row.base}`,
-      `Nº: ${row.remessa}`,
-      `EMBARCADOR: ${row.embarcador}`,
-      `DATA DA BAIXA: ${row.dataBaixa}`,
-      `ENTREGADOR: ${row.entregador}`,
-      `VENCIMENTO: ${row.vencimento}`,
-      `TEL: ${tel}`,
-    ];
-
-    if (getPrefs().telEntregador && row.telEntregador) linhas.push(`TEL ENTREGADOR: ${row.telEntregador}`);
-    if (getPrefs().valor && row.valorFmt) linhas.push(`VALOR: ${row.valorFmt}`);
-    linhas.push(`Atendente responsável: ${assistente}`);
-    if (lider&&lider.trim()) { linhas.push(``); linhas.push(`@${lider.trim()}`); }
-    if (obs&&obs.trim()) { linhas.push(``); linhas.push(`Obs: ${obs.trim()}`); }
-    return linhas.join('\n');
-  }
-
-  function copiarTexto(texto, btnId, labelOk) {
-    const btn=btnId?document.getElementById(btnId):null;
-    const fazer=()=>{
-      showToast(labelOk||'Copiado!');
-      if (btn) { const orig=btn.innerHTML; btn.classList.add('btn-copied'); btn.innerHTML='<i class="ti ti-check"></i> Copiado!'; setTimeout(()=>{ btn.classList.remove('btn-copied'); btn.innerHTML=orig; },2000); }
-    };
-    if (navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(fazer).catch(()=>fallbackCopy(texto,fazer));
-    else fallbackCopy(texto,fazer);
-  }
-
-  function copiarFeishu(idx) {
-    const row=dadosGlobal[idx]; if (!row) return;
-    const assistente=document.getElementById('assistente-input').value.trim()||'Atendente';
-    const inputLider=document.getElementById('lider-input-'+idx);
-    const lider=inputLider?inputLider.value.trim():(lideresMemoria[row.base]||'');
-    const presencial=isNumeroInvalido(row.tel)||!!presencialMemoria[row.remessa];
-    const inputObs=document.getElementById('obs-input-'+idx);
-    const obs=inputObs?inputObs.value.trim():(obsMemoria[row.remessa]||'');
-    copiarTexto(gerarTemplateFeishu(row,assistente,lider,presencial,obs),'btn-copy-'+idx,'Template copiado!');
-  }
-
-  function toggleObs(idx) {
-    const wrap=document.getElementById('obs-wrap-'+idx); if (!wrap) return;
-    const mostrando=wrap.style.display!=='none';
-    wrap.style.display=mostrando?'none':'block';
-    if (!mostrando) document.getElementById('obs-input-'+idx)?.focus();
-  }
-
-  function salvarObs(idx, valor) {
-    const row=dadosGlobal[idx]; if (!row) return;
-    if (valor&&valor.trim()) obsMemoria[row.remessa]=valor; else delete obsMemoria[row.remessa];
-    persistirObs();
-    const btn=document.getElementById('btn-obs-'+idx);
-    if (btn) btn.classList.toggle('ativo',!!obsMemoria[row.remessa]);
-  }
-
-  function copiarMensagemWpp(idx) {
-    const row=dadosGlobal[idx]; if (!row) return;
-    const assistente=document.getElementById('assistente-input').value.trim()||'Atendente';
-    copiarTexto(gerarMensagemWpp(row,assistente),'btn-msg-'+idx,'Mensagem copiada!');
-  }
-
-  function fallbackCopy(texto,cb) {
-    const ta=document.createElement('textarea'); ta.value=texto; ta.style.cssText='position:fixed;opacity:0;top:0;left:0;';
-    document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); cb();
-  }
-
-  // ─── AÇÕES ────────────────────────────────────────────────────────
-  function salvarLider(base, nome, origem) {
-    lideresMemoria[base]=nome; persistirLideres();
-    document.querySelectorAll('.lider-input[data-base]').forEach(el=>{ if(el.dataset.base===base&&el!==origem) el.value=nome; });
-  }
-
-  function togglePresencial(idx, checked) {
-    const row=dadosGlobal[idx]; if (!row) return;
-    presencialMemoria[row.remessa]=checked; persistirPresencial();
-    const invalido=isNumeroInvalido(row.tel), presencial=invalido||checked;
-    document.getElementById('card-'+idx)?.classList.toggle('presencial',presencial);
-    const b=document.getElementById('badge-tipo-'+idx);
-    if (b) { b.className='badge '+(presencial?'badge-red':'badge-blue'); b.textContent=presencial?'Presencial':'WhatsApp'; }
-    atualizarStats();
-  }
-
-  function toggleConcluido(idx) {
-    const row=dadosGlobal[idx]; if (!row) return;
-    concluidoMemoria[row.remessa]=!concluidoMemoria[row.remessa];
-    persistirConcluido();
-    const done=!!concluidoMemoria[row.remessa];
-    const card=document.getElementById('card-'+idx);
-    if (card) card.classList.toggle('concluido',done);
-    const b=document.getElementById('badge-done-'+idx);
-    if (b) { b.style.display=done?'':'none'; }
-    const btn=document.getElementById('btn-done-'+idx);
-    if (btn) { btn.classList.toggle('ativo',done); btn.innerHTML=done?'<i class="ti ti-check"></i> Concluída':'<i class="ti ti-check"></i> Concluir'; }
-    atualizarStats();
-  }
-
-  // ─── ESTATÍSTICAS ─────────────────────────────────────────────────
-  function atualizarStats() {
-    const pres=dadosGlobal.filter(r=>isNumeroInvalido(r.tel)||!!presencialMemoria[r.remessa]).length;
-    const done=dadosGlobal.filter(r=>!!concluidoMemoria[r.remessa]).length;
-    document.getElementById('st-total').textContent=dadosGlobal.length;
-    document.getElementById('st-wp').textContent=dadosGlobal.length-pres;
-    document.getElementById('st-pres').textContent=pres;
-    document.getElementById('st-done').textContent=done;
-  }
-
-  // ─── RENDERIZAÇÃO ─────────────────────────────────────────────────
-  function finalizarCarregamento(abaNome, raw, ignorados) {
-    document.getElementById('info-bar').style.display='flex';
-    document.getElementById('info-bar').innerHTML=
-      `<span>Aba: <b>${abaNome}</b> &bull; Linhas: <b>${raw.length}</b> &bull; Acareações: <b>${dadosGlobal.length}</b> &bull; Ignorados: <b>${ignorados}</b></span>
-       <button class="btn btn-sm" onclick="trocarPlanilha()"><i class="ti ti-refresh"></i> Trocar planilha</button>`;
-    if (!dadosGlobal.length) { alert('Nenhuma acareação válida encontrada.'); return; }
-    document.getElementById('upload-area').style.display='none';
-    document.getElementById('stats').style.display='flex';
-    document.getElementById('filter-bar').style.display='flex';
-    const bases=[...new Set(dadosGlobal.map(r=>r.base))].sort();
-    const problemas=[...new Set(dadosGlobal.map(r=>r.problema))].sort();
-    const assistentes=[...new Set(dadosGlobal.map(r=>r.assistenteResp).filter(Boolean))].sort();
-    const sb=document.getElementById('filter-base'), sp=document.getElementById('filter-problema'), sa=document.getElementById('filter-assistente');
-    sb.innerHTML='<option value="">Todas as bases</option>';
-    sp.innerHTML='<option value="">Todos os tipos</option>';
-    sa.innerHTML='<option value="">Todos os assistentes</option>';
-    bases.forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; sb.appendChild(o); });
-    problemas.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; sp.appendChild(o); });
-    assistentes.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; sa.appendChild(o); });
-    renderCards();
-  }
-
-  // Retorna a lista atual de {row, idx} respeitando todos os filtros e ordenação ativos.
-  // Usada tanto para renderizar os cards quanto para as ações em massa (copiar/baixar).
-  function getFiltradosAtuais() {
-    const filtroBase=document.getElementById('filter-base').value;
-    const filtroProblema=document.getElementById('filter-problema').value;
-    const filtroStatus=document.getElementById('filter-status').value;
-    const filtroTicketStatus=document.getElementById('filter-ticket-status').value;
-    const filtroAssistente=document.getElementById('filter-assistente').value;
-    const filtroSearch=document.getElementById('filter-search').value.toLowerCase();
-    const sortOrder=document.getElementById('sort-order').value;
-
-    let filtrados=dadosGlobal
-      .map((row,idx)=>({row,idx}))
-      .filter(({row})=>{
-        if (filtroBase&&row.base!==filtroBase) return false;
-        if (filtroProblema&&row.problema!==filtroProblema) return false;
-        if (filtroSearch&&!row.remessa.includes(filtroSearch)) return false;
-        if (filtroStatus==='pendente'&&!!concluidoMemoria[row.remessa]) return false;
-        if (filtroStatus==='concluido'&&!concluidoMemoria[row.remessa]) return false;
-        if (filtroTicketStatus&&row.statusTicket!==filtroTicketStatus) return false;
-        if (filtroAssistente&&row.assistenteResp!==filtroAssistente) return false;
-        return true;
-      });
-
-    if (sortOrder==='valor-asc')  filtrados.sort((a,b)=>(a.row.valorNum??Infinity)-(b.row.valorNum??Infinity));
-    if (sortOrder==='valor-desc') filtrados.sort((a,b)=>(b.row.valorNum??-Infinity)-(a.row.valorNum??-Infinity));
-    if (sortOrder==='prazo-asc')  filtrados.sort((a,b)=>a.row.prazoTs-b.row.prazoTs);
-    if (sortOrder==='prazo-desc') filtrados.sort((a,b)=>b.row.prazoTs-a.row.prazoTs);
-
-    return filtrados;
-  }
-
-  // ─── AÇÕES EM MASSA ───────────────────────────────────────────────
-  function copiarRemessasFiltradas() {
-    const filtrados = getFiltradosAtuais();
-    if (!filtrados.length) { showToast('Nenhum ticket para copiar.'); return; }
-    const texto = filtrados.map(({row}) => row.remessa).join('\n');
-    copiarTexto(texto, 'btn-copiar-remessas', `${filtrados.length} remessa(s) copiada(s)!`);
-  }
-
-  function baixarPlanilhaFiltrada() {
-    const filtrados = getFiltradosAtuais();
-    if (!filtrados.length) { showToast('Nenhum ticket para exportar.'); return; }
-
-    const linhas = filtrados.map(({row}) => ({
-      'Remessa': row.remessa,
-      'Status do Ticket': row.statusTicketRaw || '',
-      'Assistente Responsável': row.assistenteResp || '',
-      'Base': row.base,
-      'Problema': row.problema,
-      'Embarcador': row.embarcador,
-      'Destinatário': row.destinatario,
-      'Telefone': row.tel,
-      'Telefone Entregador': row.telEntregador || '',
-      'Entregador': row.entregador,
-      'Data da Entrega': row.dataBaixa,
-      'Vencimento': row.vencimento,
-      'Valor': row.valorFmt || '',
-      'Item': row.item || '',
-      'RNE': row.rne || '',
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(linhas);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Acareações');
-
-    const agora = new Date();
-    const pad = n => String(n).padStart(2,'0');
-    const nomeArquivo = `acareacoes_${agora.getFullYear()}${pad(agora.getMonth()+1)}${pad(agora.getDate())}_${pad(agora.getHours())}${pad(agora.getMinutes())}.xlsx`;
-
-    XLSX.writeFile(wb, nomeArquivo);
-    showToast(`Planilha com ${filtrados.length} ticket(s) baixada!`);
-  }
-
-  function atualizarBulkBar(qtd) {
-    const bar = document.getElementById('bulk-bar');
-    const count = document.getElementById('bulk-count');
-    if (!bar) return;
-    bar.style.display = qtd > 0 ? 'flex' : 'none';
-    if (count) count.textContent = `${qtd} ticket${qtd===1?'':'s'} visível${qtd===1?'':'eis'} (respeitando os filtros atuais)`;
-    atualizarContadorSelecionados();
-  }
-
-  // ─── SELEÇÃO / OBS EM MASSA ───────────────────────────────────────
-  function atualizarContadorSelecionados() {
-    const el = document.getElementById('bulk-selected-count');
-    if (el) el.textContent = `${selecionados.size} selecionado${selecionados.size===1?'':'s'}`;
-  }
-
-  function toggleSelecao(idx, checked) {
-    if (checked) selecionados.add(idx); else selecionados.delete(idx);
-    atualizarContadorSelecionados();
-  }
-
-  function selecionarTodosVisiveis() {
-    getFiltradosAtuais().forEach(({idx})=>selecionados.add(idx));
-    renderCards();
-  }
-
-  function limparSelecao() {
-    selecionados.clear();
-    renderCards();
-  }
-
-  function fecharBulkObs() {
-    modoSelecaoObs = false;
-    const wrap = document.getElementById('bulk-obs-wrap');
-    const controles = document.getElementById('bulk-selecao-controles');
-    if (wrap) wrap.style.display = 'none';
-    if (controles) controles.style.display = 'none';
-    selecionados.clear();
-    renderCards();
-  }
-
-  function toggleBulkObs() {
-    if (modoSelecaoObs) { fecharBulkObs(); return; }
-    modoSelecaoObs = true;
-    const wrap = document.getElementById('bulk-obs-wrap');
-    const controles = document.getElementById('bulk-selecao-controles');
-    if (wrap) wrap.style.display = 'block';
-    if (controles) controles.style.display = 'flex';
-    document.getElementById('bulk-obs-input')?.focus();
-    renderCards();
-  }
-
-  function aplicarObsEmMassa() {
-    const input = document.getElementById('bulk-obs-input');
-    const texto = input ? input.value.trim() : '';
-    if (!texto) { showToast('Digite uma observação.'); return; }
-    if (!selecionados.size) { showToast('Nenhum ticket selecionado.'); return; }
-    selecionados.forEach(idx => {
-      const row = dadosGlobal[idx]; if (!row) return;
-      obsMemoria[row.remessa] = texto;
-    });
-    persistirObs();
-    showToast(`Obs aplicada a ${selecionados.size} ticket(s)!`);
-    if (input) input.value = '';
-    fecharBulkObs();
-  }
-
-  function renderCards() {
-    const container=document.getElementById('cards-container');
-    const assistente=document.getElementById('assistente-input').value.trim()||'Atendente';
-
-    let filtrados = getFiltradosAtuais();
-
-    atualizarStats();
-    atualizarBulkBar(filtrados.length);
-
-    if (!filtrados.length) {
-      container.innerHTML='<div class="empty"><i class="ti ti-inbox" style="font-size:36px;display:block;margin-bottom:8px;"></i>Nenhuma acareação encontrada</div>';
-      return;
-    }
-
-    container.innerHTML=filtrados.map(({row,idx})=>{
-      const invalido=isNumeroInvalido(row.tel);
-      const presencial=invalido||!!presencialMemoria[row.remessa];
-      const done=!!concluidoMemoria[row.remessa];
-      const lider=lideresMemoria[row.base]||'';
-
-      // ★ badge de status do ticket
-      const stMeta = STATUS_TICKET_META[row.statusTicket] || STATUS_TICKET_META['sem_status'];
-      const badgeTicket = row.statusTicketRaw
-        ? `<span class="badge ${stMeta.cls}" title="Status no BI: ${row.statusTicketRaw}">${stMeta.label}</span>`
-        : '';
-
-      return `
-      <div class="card ${presencial?'presencial':''} ${done?'concluido':''}" id="card-${idx}">
-        <div class="card-top">
-          <div style="display:flex;align-items:flex-start;gap:8px;">
-            ${modoSelecaoObs?`<input type="checkbox" class="card-select" ${selecionados.has(idx)?'checked':''} onchange="toggleSelecao(${idx}, this.checked)" style="margin-top:3px;cursor:pointer;" title="Selecionar para ações em massa">`:''}
-            <div>
-              <div class="card-title">${row.remessa} &mdash; ${row.embarcador}</div>
-              <div class="card-subtitle">${row.base}${row.rne?' &bull; '+row.rne:''}</div>
-            </div>
-          </div>
-          <div class="badges">
-            <span class="badge ${presencial?'badge-red':'badge-blue'}" id="badge-tipo-${idx}">${presencial?'Presencial':'WhatsApp'}</span>
-            <span class="badge badge-amber">${row.problema}</span>
-            ${badgeTicket}
-            ${row.valorFmt?`<span class="badge badge-gray">${row.valorFmt}</span>`:''}
-            <span class="badge badge-done" id="badge-done-${idx}" style="display:${done?'':'none'}"><i class="ti ti-check"></i> Concluída</span>
-          </div>
-        </div>
-        <div class="card-grid">
-          <div class="field"><div class="field-label">Vencimento</div><div class="field-value">${row.vencimento}</div></div>
-          <div class="field"><div class="field-label">Entregador</div><div class="field-value">${row.entregador}</div></div>
-          <div class="field"><div class="field-label">Telefone cliente</div><div class="field-value">${invalido?'Sem número':row.tel}</div></div>
-          <div class="field"><div class="field-label">Telefone entregador</div><div class="field-value">${row.telEntregador||'N/A'}</div></div>
-          ${row.item?`<div class="field"><div class="field-label">Produto</div><div class="field-value">${row.item}</div></div>`:''}
-        </div>
-        <div class="card-actions">
-          <button class="btn btn-teal" id="btn-msg-${idx}" onclick="copiarMensagemWpp(${idx})"><i class="ti ti-message"></i> Copiar ativo</button>
-          <button class="btn btn-blue" id="btn-copy-${idx}" onclick="copiarFeishu(${idx})"><i class="ti ti-copy"></i> Copiar template Feishu</button>
-          <button class="btn btn-done ${done?'ativo':''}" id="btn-done-${idx}" onclick="toggleConcluido(${idx})">
-            <i class="ti ti-check"></i> ${done?'Concluída':'Concluir'}
-          </button>
-          <button class="btn btn-obs ${obsMemoria[row.remessa]?'ativo':''}" id="btn-obs-${idx}" onclick="toggleObs(${idx})"><i class="ti ti-note"></i> Obs</button>
-          <span style="font-size:12px;color:var(--text-hint);">@ Líder:</span>
-          <input class="lider-input" id="lider-input-${idx}" type="text" placeholder="Nome do líder" value="${lider}"
-            data-base="${row.base.replace(/"/g,'&quot;')}" oninput="salvarLider(this.dataset.base, this.value, this)">
-          ${!invalido?`<label class="toggle-label"><input type="checkbox" ${presencialMemoria[row.remessa]?'checked':''} onchange="togglePresencial(${idx},this.checked)"> Presencial</label>`:''}
-        </div>
-        <div class="obs-wrap" id="obs-wrap-${idx}" style="display:${obsMemoria[row.remessa]?'block':'none'}">
-          <textarea class="obs-textarea" id="obs-input-${idx}" placeholder="Digite a observação (aparece só no template Feishu)..." oninput="salvarObs(${idx}, this.value)">${escHtml(obsMemoria[row.remessa]||'')}</textarea>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ─── TROCAR PLANILHA ──────────────────────────────────────────────
-  function trocarPlanilha() {
-    dadosGlobal=[];
-    selecionados.clear();
-    modoSelecaoObs=false;
-    Object.keys(presencialMemoria).forEach(k=>delete presencialMemoria[k]); persistirPresencial();
-    document.getElementById('filter-base').innerHTML='<option value="">Todas as bases</option>';
-    document.getElementById('filter-problema').innerHTML='<option value="">Todos os tipos</option>';
-    document.getElementById('filter-search').value='';
-    document.getElementById('sort-order').value='';
-    document.getElementById('filter-status').value='';
-    document.getElementById('filter-ticket-status').value='para_atribuir';
-    document.getElementById('filter-assistente').value='';
-    document.getElementById('upload-area').style.display='block';
-    document.getElementById('stats').style.display='none';
-    document.getElementById('filter-bar').style.display='none';
-    document.getElementById('bulk-bar').style.display='none';
-    document.getElementById('info-bar').style.display='none';
-    document.getElementById('cards-container').innerHTML='';
-    recriarInputArquivo().click();
-  }
-
-  // ─── LEITURA DO ARQUIVO ───────────────────────────────────────────
-  function recriarInputArquivo() {
-    const old=document.getElementById('file-input');
-    const novo=document.createElement('input');
-    novo.type='file'; novo.id='file-input'; novo.accept='.xlsx,.xls'; novo.style.display='none';
-    novo.addEventListener('change',handleFileChange); old.replaceWith(novo); return novo;
-  }
-
-  function handleFileChange(e) {
-    const file=e.target.files[0]; if (!file) return;
-    e.target.value='';
-    const reader=new FileReader();
-    reader.onload=function(ev){
-      try {
-        const wb=XLSX.read(ev.target.result,{type:'array',cellDates:false});
-        const abaNome=encontrarAba(wb);
-        const raw=XLSX.utils.sheet_to_json(wb.Sheets[abaNome],{defval:'',raw:true});
-        if (!raw.length) { alert('Planilha vazia.'); return; }
-        const cols=Object.keys(raw[0]), sig=assinatura(cols);
-        const mapaSalvo=carregarMapeamento(sig), foiSalvo=!!mapaSalvo;
-        const mapaAuto={}; const colunasUsadas=new Set();
-        CAMPOS.forEach(c=>{
-          const col = detectarColuna(cols, c.candidatos, colunasUsadas);
-          mapaAuto[c.id] = col;
-          if (col) colunasUsadas.add(col);
-        });
-        abrirModalMapeamento(cols,mapaSalvo||mapaAuto,foiSalvo,(mapaConfirmado)=>{
-          const {dados,ignorados}=processarDados(raw,mapaConfirmado);
-          dadosGlobal=dados; finalizarCarregamento(abaNome,raw,ignorados);
-        });
-      } catch(err) { alert('Erro ao ler o arquivo: '+err.message); console.error(err); }
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  document.getElementById('file-input').addEventListener('change',handleFileChange);
-  document.getElementById('filter-base').addEventListener('change',renderCards);
-  document.getElementById('filter-problema').addEventListener('change',renderCards);
-  document.getElementById('filter-status').addEventListener('change',renderCards);
-  document.getElementById('filter-ticket-status').addEventListener('change',renderCards);
-  document.getElementById('filter-assistente').addEventListener('change',renderCards);
-  document.getElementById('filter-search').addEventListener('input',renderCards);
-  document.getElementById('sort-order').addEventListener('change',renderCards);
-  document.getElementById('assistente-input').addEventListener('input',(e)=>{
-    localStorage.setItem('atendente',e.target.value);
-  });
-</script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/dominio.js"></script>
+<script src="assets/js/templates.js"></script>
+<script src="assets/js/planilha.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/menus.js"></script>
+<script src="assets/js/modal-mapa.js"></script>
+<script src="assets/js/view.js"></script>
+<script src="assets/js/app.js"></script>
 </body>
 </html>
