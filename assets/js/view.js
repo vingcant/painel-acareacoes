@@ -153,7 +153,7 @@ window.App.View = (function () {
   function renderBulkBar(qtd) {
     $('bulk-bar').style.display = qtd > 0 ? 'flex' : 'none';
     $('bulk-count').textContent =
-      `${qtd} ticket${qtd === 1 ? '' : 's'} visível${qtd === 1 ? '' : 'eis'} (respeitando os filtros atuais)`;
+      `${qtd} ticket${qtd === 1 ? '' : 's'} ${qtd === 1 ? 'visível' : 'visíveis'} (respeitando os filtros atuais)`;
   }
 
   // ─── Seleção e observação em massa ──────────────────────────────────
