@@ -222,7 +222,8 @@
         },
       });
     }).catch(err => {
-      alert('Erro ao ler o arquivo: ' + err.message);
+      alert('Erro ao ler o arquivo: ' + err.message +
+        '\n\nFormatos aceitos: .xlsx, .xls, .csv e .ods.');
       console.error(err);
     });
   }

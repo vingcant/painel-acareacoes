@@ -64,17 +64,46 @@ window.App.Planilha = (function () {
     return mapa;
   }
 
+  /** Formato nativo do WPS: o XLSX não lê e ainda aceita o arquivo em silêncio. */
+  const EXT_NAO_SUPORTADAS = ['et', 'ett'];
+
   /**
-   * Lê o .xlsx escolhido pelo usuário.
+   * CSV salvo em UTF-8 sem BOM sai com acento quebrado quando lido como bytes.
+   * Devolve o texto decodificado, ou null se não for UTF-8 válido (ANSI/cp1252),
+   * caso em que o XLSX resolve pelo caminho normal.
+   */
+  function decodificarUtf8(bytes) {
+    try {
+      const txt = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      return txt.charCodeAt(0) === 0xFEFF ? txt.slice(1) : txt;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /**
+   * Lê a planilha escolhida (.xlsx, .xls, .csv ou .ods).
    * @returns {Promise<{abaNome: string, raw: object[], cols: string[]}>}
    */
   function ler(file) {
     return new Promise((resolve, reject) => {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      if (EXT_NAO_SUPORTADAS.includes(ext)) {
+        reject(new Error('formato nativo do WPS (.' + ext + ') não é suportado — no WPS use ' +
+          'Arquivo > Salvar como > Pasta de trabalho do Excel (*.xlsx)'));
+        return;
+      }
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('não foi possível ler o arquivo'));
       reader.onload = ev => {
         try {
-          const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: false });
+          let dados = ev.target.result;
+          let tipo = 'array';
+          if (ext === 'csv') {
+            const txt = decodificarUtf8(new Uint8Array(dados));
+            if (txt !== null) { dados = txt; tipo = 'string'; }
+          }
+          const wb = XLSX.read(dados, { type: tipo, cellDates: false });
           const abaNome = encontrarAba(wb);
           const raw = XLSX.utils.sheet_to_json(wb.Sheets[abaNome], { defval: '', raw: true });
           resolve({ abaNome, raw, cols: raw.length ? Object.keys(raw[0]) : [] });

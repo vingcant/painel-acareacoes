@@ -319,7 +319,7 @@ window.App.View = (function () {
     const novo = document.createElement('input');
     novo.type = 'file';
     novo.id = 'file-input';
-    novo.accept = '.xlsx,.xls';
+    novo.accept = '.xlsx,.xls,.csv,.ods';
     novo.style.display = 'none';
     novo.addEventListener('change', tratarSelecaoArquivo);
     antigo.replaceWith(novo);
