@@ -234,7 +234,7 @@ window.App.Dominio = (function () {
    * Aplica filtros e ordenação, devolvendo `{ row, idx }` — `idx` é a posição
    * na lista original, que é como as ações identificam a acareação.
    *
-   * @param {object}   criterios      { base, problema, status, statusTicket, assistente, busca, ordenacao }
+   * @param {object}   criterios      { base, embarcador, problema, status, statusTicket, assistente, busca, ordenacao }
    * @param {function} estaConcluido  (row) => boolean
    */
   function filtrarEOrdenar(dados, criterios, estaConcluido) {
@@ -245,6 +245,7 @@ window.App.Dominio = (function () {
       .map((row, idx) => ({ row, idx }))
       .filter(({ row }) => {
         if (c.base && row.base !== c.base) return false;
+        if (c.embarcador && row.embarcador !== c.embarcador) return false;
         if (c.problema && row.problema !== c.problema) return false;
         if (busca && !row.remessa.includes(busca)) return false;
         if (c.status === 'pendente' && estaConcluido(row)) return false;
@@ -263,9 +264,10 @@ window.App.Dominio = (function () {
   function opcoesDeFiltro(dados) {
     const distintos = f => [...new Set(dados.map(f).filter(Boolean))].sort();
     return {
-      bases:       [...new Set(dados.map(r => r.base))].sort(),
-      problemas:   [...new Set(dados.map(r => r.problema))].sort(),
-      assistentes: distintos(r => r.assistenteResp),
+      bases:        [...new Set(dados.map(r => r.base))].sort(),
+      embarcadores: distintos(r => r.embarcador),
+      problemas:    [...new Set(dados.map(r => r.problema))].sort(),
+      assistentes:  distintos(r => r.assistenteResp),
     };
   }
 

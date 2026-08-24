@@ -22,6 +22,7 @@ window.App.View = (function () {
 
   const OPCAO_PADRAO = {
     'filter-base':       'Todas as bases',
+    'filter-embarcador': 'Todos os embarcadores',
     'filter-problema':   'Todos os tipos',
     'filter-assistente': 'Todos os assistentes',
   };
@@ -72,7 +73,7 @@ window.App.View = (function () {
   // ─── Filtros ────────────────────────────────────────────────────────
 
   const IDS_FILTRO = [
-    'filter-base', 'filter-problema', 'filter-status', 'filter-ticket-status',
+    'filter-base', 'filter-embarcador', 'filter-problema', 'filter-status', 'filter-ticket-status',
     'filter-assistente', 'filter-search', 'sort-order',
   ];
 
@@ -80,6 +81,7 @@ window.App.View = (function () {
   function lerFiltros() {
     return {
       base:         $('filter-base').value,
+      embarcador:   $('filter-embarcador').value,
       problema:     $('filter-problema').value,
       status:       $('filter-status').value,
       statusTicket: $('filter-ticket-status').value,
@@ -102,13 +104,15 @@ window.App.View = (function () {
 
   function preencherFiltros(opcoes) {
     preencherSelect('filter-base', opcoes.bases);
+    preencherSelect('filter-embarcador', opcoes.embarcadores);
     preencherSelect('filter-problema', opcoes.problemas);
     preencherSelect('filter-assistente', opcoes.assistentes);
   }
 
   function resetarFiltros() {
-    $('filter-base').innerHTML     = `<option value="">${OPCAO_PADRAO['filter-base']}</option>`;
-    $('filter-problema').innerHTML = `<option value="">${OPCAO_PADRAO['filter-problema']}</option>`;
+    $('filter-base').innerHTML       = `<option value="">${OPCAO_PADRAO['filter-base']}</option>`;
+    $('filter-embarcador').innerHTML = `<option value="">${OPCAO_PADRAO['filter-embarcador']}</option>`;
+    $('filter-problema').innerHTML   = `<option value="">${OPCAO_PADRAO['filter-problema']}</option>`;
     $('filter-search').value = '';
     $('sort-order').value = '';
     $('filter-status').value = '';
